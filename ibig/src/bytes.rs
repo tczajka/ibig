@@ -85,27 +85,6 @@ impl UBig {
     }
 }
 
-/// The [`UBig::to_le_bytes`] operation.
-enum ToLeBytesUBig {}
-
-impl UnaryOpRefBig for ToLeBytesUBig {
-    type Operand = UBig;
-    type Output = Vec<u8>;
-
-    fn apply_digit(operand: Digit) -> Vec<u8> {
-        let mut bytes = operand.to_le_bytes().to_vec();
-        bytes.truncate(ibig_core::min_len_bytes_unsigned(&bytes));
-        bytes
-    }
-
-    fn apply_ref(operand: &[Digit]) -> Vec<u8> {
-        let mut bytes = vec![0u8; operand.len() * Digit::BYTES];
-        ibig_core::to_bytes_unsigned(operand, &mut bytes);
-        bytes.truncate(ibig_core::min_len_bytes_unsigned(&bytes));
-        bytes
-    }
-}
-
 impl IBig {
     /// Returns the little-endian (least-significant-first) two's complement byte
     /// representation, with no redundant sign-extension bytes. The result
@@ -198,6 +177,27 @@ impl IBig {
         digits.resize(bytes.len().div_ceil(Digit::BYTES), Digit::ZERO);
         ibig_core::from_be_bytes_signed(bytes, &mut digits);
         IBig::from_digits(digits)
+    }
+}
+
+/// The [`UBig::to_le_bytes`] operation.
+enum ToLeBytesUBig {}
+
+impl UnaryOpRefBig for ToLeBytesUBig {
+    type Operand = UBig;
+    type Output = Vec<u8>;
+
+    fn apply_digit(operand: Digit) -> Vec<u8> {
+        let mut bytes = operand.to_le_bytes().to_vec();
+        bytes.truncate(ibig_core::min_len_bytes_unsigned(&bytes));
+        bytes
+    }
+
+    fn apply_ref(operand: &[Digit]) -> Vec<u8> {
+        let mut bytes = vec![0u8; operand.len() * Digit::BYTES];
+        ibig_core::to_bytes_unsigned(operand, &mut bytes);
+        bytes.truncate(ibig_core::min_len_bytes_unsigned(&bytes));
+        bytes
     }
 }
 

@@ -198,126 +198,6 @@ impl UBig {
     }
 }
 
-/// The [`UBig::bit_width`] operation.
-enum BitWidthUBig {}
-
-impl UnaryOpRefBig for BitWidthUBig {
-    type Operand = UBig;
-    type Output = usize;
-
-    fn apply_digit(operand: Digit) -> usize {
-        DIGIT_BITS_USIZE - usize::try_from(operand.leading_zeros()).unwrap()
-    }
-
-    fn apply_ref(operand: &[Digit]) -> usize {
-        // A multi-digit value is nonzero, so it has a highest set bit.
-        let highest = ibig_core::highest_one(operand).unwrap();
-        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
-        usize::try_from(highest).unwrap() + 1
-    }
-}
-
-/// The [`UBig::trailing_zeros`] operation.
-enum TrailingZerosUBig {}
-
-impl UnaryOpRefBig for TrailingZerosUBig {
-    type Operand = UBig;
-    type Output = usize;
-
-    fn apply_digit(operand: Digit) -> usize {
-        assert!(
-            operand != Digit::ZERO,
-            "zero has infinitely many trailing zeros"
-        );
-        operand.trailing_zeros().try_into().unwrap()
-    }
-
-    fn apply_ref(operand: &[Digit]) -> usize {
-        // A multi-digit value is nonzero, so it has a lowest set bit.
-        let lowest = ibig_core::lowest_one(operand).unwrap();
-        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
-        lowest.try_into().unwrap()
-    }
-}
-
-/// The [`UBig::trailing_ones`] operation.
-enum TrailingOnesUBig {}
-
-impl UnaryOpRefBig for TrailingOnesUBig {
-    type Operand = UBig;
-    type Output = usize;
-
-    fn apply_digit(operand: Digit) -> usize {
-        operand.trailing_ones().try_into().unwrap()
-    }
-
-    fn apply_ref(operand: &[Digit]) -> usize {
-        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
-        match ibig_core::lowest_zero(operand) {
-            Some(bit_index) => bit_index.try_into().unwrap(),
-            None => operand.len() * DIGIT_BITS_USIZE,
-        }
-    }
-}
-
-/// The [`UBig::count_ones`] operation.
-enum CountOnesUBig {}
-
-impl UnaryOpRefBig for CountOnesUBig {
-    type Operand = UBig;
-    type Output = usize;
-
-    fn apply_digit(operand: Digit) -> usize {
-        operand.count_ones().try_into().unwrap()
-    }
-
-    fn apply_ref(operand: &[Digit]) -> usize {
-        ibig_core::count_ones(operand)
-    }
-}
-
-/// The [`UBig::is_power_of_two`] operation.
-enum IsPowerOfTwoUBig {}
-
-impl UnaryOpRefBig for IsPowerOfTwoUBig {
-    type Operand = UBig;
-    type Output = bool;
-
-    fn apply_digit(operand: Digit) -> bool {
-        operand.is_power_of_two()
-    }
-
-    fn apply_ref(operand: &[Digit]) -> bool {
-        ibig_core::is_power_of_two(operand)
-    }
-}
-
-/// The [`UBig::next_power_of_two`] operation.
-enum NextPowerOfTwoUBig {}
-
-impl UnaryOpRefBig for NextPowerOfTwoUBig {
-    type Operand = UBig;
-    type Output = UBig;
-
-    fn apply_digit(operand: Digit) -> UBig {
-        match operand.checked_next_power_of_two() {
-            Some(power) => UBig::from_digit(power),
-            None => UBig::const_from_digits(&[Digit::ZERO, Digit::from_u8(1)]),
-        }
-    }
-
-    fn apply_ref(operand: &[Digit]) -> UBig {
-        // Clone with room for one more digit in case rounding up overflows.
-        let mut new_digits = Digits::with_capacity(operand.len() + 1);
-        new_digits.extend_from_slice(operand);
-        if ibig_core::next_power_of_two(&mut new_digits) {
-            // Overflow.
-            new_digits.push(Digit::from_u8(1));
-        }
-        UBig::from_digits(new_digits)
-    }
-}
-
 impl IBig {
     /// Returns the bit at `position` of the two's complement representation, counting from the
     /// least-significant bit. Positions at or above the stored width read as the sign bit,
@@ -494,6 +374,126 @@ impl IBig {
             // This will not overflow because our numbers are never longer than `usize::MAX` bits.
             Some(highest.try_into().unwrap())
         }
+    }
+}
+
+/// The [`UBig::bit_width`] operation.
+enum BitWidthUBig {}
+
+impl UnaryOpRefBig for BitWidthUBig {
+    type Operand = UBig;
+    type Output = usize;
+
+    fn apply_digit(operand: Digit) -> usize {
+        DIGIT_BITS_USIZE - usize::try_from(operand.leading_zeros()).unwrap()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> usize {
+        // A multi-digit value is nonzero, so it has a highest set bit.
+        let highest = ibig_core::highest_one(operand).unwrap();
+        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
+        usize::try_from(highest).unwrap() + 1
+    }
+}
+
+/// The [`UBig::trailing_zeros`] operation.
+enum TrailingZerosUBig {}
+
+impl UnaryOpRefBig for TrailingZerosUBig {
+    type Operand = UBig;
+    type Output = usize;
+
+    fn apply_digit(operand: Digit) -> usize {
+        assert!(
+            operand != Digit::ZERO,
+            "zero has infinitely many trailing zeros"
+        );
+        operand.trailing_zeros().try_into().unwrap()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> usize {
+        // A multi-digit value is nonzero, so it has a lowest set bit.
+        let lowest = ibig_core::lowest_one(operand).unwrap();
+        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
+        lowest.try_into().unwrap()
+    }
+}
+
+/// The [`UBig::trailing_ones`] operation.
+enum TrailingOnesUBig {}
+
+impl UnaryOpRefBig for TrailingOnesUBig {
+    type Operand = UBig;
+    type Output = usize;
+
+    fn apply_digit(operand: Digit) -> usize {
+        operand.trailing_ones().try_into().unwrap()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> usize {
+        // This will not overflow because our numbers are never longer than `usize::MAX` bits.
+        match ibig_core::lowest_zero(operand) {
+            Some(bit_index) => bit_index.try_into().unwrap(),
+            None => operand.len() * DIGIT_BITS_USIZE,
+        }
+    }
+}
+
+/// The [`UBig::count_ones`] operation.
+enum CountOnesUBig {}
+
+impl UnaryOpRefBig for CountOnesUBig {
+    type Operand = UBig;
+    type Output = usize;
+
+    fn apply_digit(operand: Digit) -> usize {
+        operand.count_ones().try_into().unwrap()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> usize {
+        ibig_core::count_ones(operand)
+    }
+}
+
+/// The [`UBig::is_power_of_two`] operation.
+enum IsPowerOfTwoUBig {}
+
+impl UnaryOpRefBig for IsPowerOfTwoUBig {
+    type Operand = UBig;
+    type Output = bool;
+
+    fn apply_digit(operand: Digit) -> bool {
+        operand.is_power_of_two()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> bool {
+        ibig_core::is_power_of_two(operand)
+    }
+}
+
+/// The [`UBig::next_power_of_two`] operation.
+enum NextPowerOfTwoUBig {}
+
+impl UnaryOpRefBig for NextPowerOfTwoUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
+    fn apply_digit(operand: Digit) -> UBig {
+        match operand.checked_next_power_of_two() {
+            Some(power) => UBig::from_digit(power),
+            None => UBig::const_from_digits(&[Digit::ZERO, Digit::from_u8(1)]),
+        }
+    }
+
+    fn apply_ref(operand: &[Digit]) -> UBig {
+        // Clone with room for one more digit in case rounding up overflows.
+        let mut new_digits = Digits::with_capacity(operand.len() + 1);
+        new_digits.extend_from_slice(operand);
+        if ibig_core::next_power_of_two(&mut new_digits) {
+            // Overflow.
+            new_digits.push(Digit::from_u8(1));
+        }
+        UBig::from_digits(new_digits)
     }
 }
 
