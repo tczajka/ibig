@@ -34,6 +34,24 @@ pub(crate) trait UnaryOpRefVal {
     fn apply_val(value: Self::Operand) -> Self::Output;
 }
 
+/// A unary operation implemented on a big number, reading it without consuming it.
+///
+/// The operand appears in one of two forms: a single digit (`digit`) or a borrowed slice
+/// (`ref`).
+pub(crate) trait UnaryOpRefBig {
+    /// The type of the operand.
+    type Operand: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
+    /// The operand is a single digit.
+    fn apply_digit(operand: <Self::Operand as AsDigits>::SingleDigit) -> Self::Output;
+
+    /// The operand is a borrowed slice.
+    fn apply_ref(operand: &[Digit]) -> Self::Output;
+}
+
 /// A unary operation implemented on a big number.
 ///
 /// The operand appears in one of three forms: a single digit (`digit`), a borrowed slice
@@ -55,6 +73,19 @@ pub(crate) trait UnaryOpRefValBig {
     fn apply_val(operand: Digits) -> Self::Output;
 }
 
+/// Every [`UnaryOpRefBig`] induces a [`UnaryOpRef`].
+impl<Op: UnaryOpRefBig> UnaryOpRef for Op {
+    type Operand = Op::Operand;
+    type Output = Op::Output;
+
+    fn apply_ref(value: &Self::Operand) -> Self::Output {
+        match value.as_digits() {
+            Small(d) => <Op as UnaryOpRefBig>::apply_digit(d),
+            Large(digits) => <Op as UnaryOpRefBig>::apply_ref(digits),
+        }
+    }
+}
+
 /// Every [`UnaryOpRefValBig`] induces a [`UnaryOpRefVal`].
 impl<Op: UnaryOpRefValBig> UnaryOpRefVal for Op {
     type Operand = Op::Operand;
@@ -71,37 +102,6 @@ impl<Op: UnaryOpRefValBig> UnaryOpRefVal for Op {
         match value.into_digits() {
             Small(d) => <Op as UnaryOpRefValBig>::apply_digit(d),
             Large(digits) => <Op as UnaryOpRefValBig>::apply_val(digits),
-        }
-    }
-}
-
-/// A unary operation implemented on a big number, reading it without consuming it.
-///
-/// The operand appears in one of two forms: a single digit (`digit`) or a borrowed slice
-/// (`ref`).
-pub(crate) trait UnaryOpRefBig {
-    /// The type of the operand.
-    type Operand: AsDigits;
-
-    /// The type of the result.
-    type Output;
-
-    /// The operand is a single digit.
-    fn apply_digit(operand: <Self::Operand as AsDigits>::SingleDigit) -> Self::Output;
-
-    /// The operand is a borrowed slice.
-    fn apply_ref(operand: &[Digit]) -> Self::Output;
-}
-
-/// Every [`UnaryOpRefBig`] induces a [`UnaryOpRef`].
-impl<Op: UnaryOpRefBig> UnaryOpRef for Op {
-    type Operand = Op::Operand;
-    type Output = Op::Output;
-
-    fn apply_ref(value: &Self::Operand) -> Self::Output {
-        match value.as_digits() {
-            Small(d) => <Op as UnaryOpRefBig>::apply_digit(d),
-            Large(digits) => <Op as UnaryOpRefBig>::apply_ref(digits),
         }
     }
 }
