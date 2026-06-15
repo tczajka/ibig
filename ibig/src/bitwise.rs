@@ -1,7 +1,7 @@
 //! Bitwise operators for [`UBig`] and [`IBig`].
 
 use crate::ops::{
-    CommutativeBinaryOpDigits, DigitsRhs, UnaryOpDigits, impl_binary_operator, impl_unary_operator,
+    CommutativeBinaryOpDigits, DigitsRhs, UnaryOpBig, impl_binary_operator, impl_unary_operator,
 };
 use crate::repr::{
     AsDigits,
@@ -53,10 +53,13 @@ impl UBig {
     }
 }
 
-/// Bitwise NOT operation.
-struct NotOperation;
+/// Bitwise NOT operation for [`IBig`].
+enum NotIBig {}
 
-impl UnaryOpDigits<IBig> for NotOperation {
+impl UnaryOpBig for NotIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit(operand: SignedDigit) -> IBig {
         IBig::from_digit(!operand)
     }
@@ -71,7 +74,7 @@ impl UnaryOpDigits<IBig> for NotOperation {
     }
 }
 
-impl_unary_operator!(IBig, Not::not, NotOperation);
+impl_unary_operator!(Not::not(IBig) -> IBig, NotIBig);
 
 /// Bitwise AND operation.
 struct BitAndOperation;

@@ -7,45 +7,60 @@ use crate::repr::{
 };
 use ibig_core::Digit;
 
-/// A unary operation on a value of type `T`.
+/// A unary operation.
 ///
 /// The operand can be borrowed or owned.
-pub(crate) trait UnaryOp<T> {
+pub(crate) trait UnaryOp {
+    /// The type of the operand.
+    type Operand;
+
+    /// The type of the result.
+    type Output;
+
     /// The operand is borrowed.
-    fn apply_ref(value: &T) -> T;
+    fn apply_ref(value: &Self::Operand) -> Self::Output;
 
     /// The operand is owned.
-    fn apply_val(value: T) -> T;
+    fn apply_val(value: Self::Operand) -> Self::Output;
 }
 
-/// A unary operation implemented on the digit representation of a number.
+/// A unary operation implemented on a big number.
 ///
 /// The operand appears in one of three forms: a single digit (`digit`), a borrowed slice
 /// (`ref`), or an owned buffer (`val`).
-pub(crate) trait UnaryOpDigits<T: AsDigits> {
+pub(crate) trait UnaryOpBig {
+    /// The type of the operand.
+    type Operand: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
     /// The operand is a single digit.
-    fn apply_digit(operand: T::SingleDigit) -> T;
+    fn apply_digit(operand: <Self::Operand as AsDigits>::SingleDigit) -> Self::Output;
 
     /// The operand is a borrowed slice.
-    fn apply_ref(operand: &[Digit]) -> T;
+    fn apply_ref(operand: &[Digit]) -> Self::Output;
 
     /// The operand is an owned buffer.
-    fn apply_val(operand: Digits) -> T;
+    fn apply_val(operand: Digits) -> Self::Output;
 }
 
-/// Every [`UnaryOpDigits`] induces a [`UnaryOp`].
-impl<T: AsDigits, Op: UnaryOpDigits<T>> UnaryOp<T> for Op {
-    fn apply_ref(value: &T) -> T {
+/// Every [`UnaryOpBig`] induces a [`UnaryOp`].
+impl<Op: UnaryOpBig> UnaryOp for Op {
+    type Operand = Op::Operand;
+    type Output = Op::Output;
+
+    fn apply_ref(value: &Self::Operand) -> Self::Output {
         match value.as_digits() {
-            Small(d) => <Op as UnaryOpDigits<T>>::apply_digit(d),
-            Large(digits) => <Op as UnaryOpDigits<T>>::apply_ref(digits),
+            Small(d) => <Op as UnaryOpBig>::apply_digit(d),
+            Large(digits) => <Op as UnaryOpBig>::apply_ref(digits),
         }
     }
 
-    fn apply_val(value: T) -> T {
+    fn apply_val(value: Self::Operand) -> Self::Output {
         match value.into_digits() {
-            Small(d) => <Op as UnaryOpDigits<T>>::apply_digit(d),
-            Large(digits) => <Op as UnaryOpDigits<T>>::apply_val(digits),
+            Small(d) => <Op as UnaryOpBig>::apply_digit(d),
+            Large(digits) => <Op as UnaryOpBig>::apply_val(digits),
         }
     }
 }
@@ -55,20 +70,20 @@ impl<T: AsDigits, Op: UnaryOpDigits<T>> UnaryOp<T> for Op {
 ///
 /// `$trait`/`$method` is the operator trait; it must be in scope at the call site.
 macro_rules! impl_unary_operator {
-    ($t:ty, $trait:ident :: $method:ident, $op:ty) => {
-        impl $trait for $t {
-            type Output = $t;
+    ($trait:ident :: $method:ident($operand:ty) -> $output:ty, $op:ty) => {
+        impl $trait for $operand {
+            type Output = $output;
 
-            fn $method(self) -> $t {
-                <$op as $crate::ops::UnaryOp<$t>>::apply_val(self)
+            fn $method(self) -> Self::Output {
+                <$op as $crate::ops::UnaryOp>::apply_val(self)
             }
         }
 
-        impl $trait for &$t {
-            type Output = $t;
+        impl $trait for &$operand {
+            type Output = $output;
 
-            fn $method(self) -> $t {
-                <$op as $crate::ops::UnaryOp<$t>>::apply_ref(self)
+            fn $method(self) -> Self::Output {
+                <$op as $crate::ops::UnaryOp>::apply_ref(self)
             }
         }
     };

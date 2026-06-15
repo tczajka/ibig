@@ -1,7 +1,7 @@
 //! Sign operations on [`IBig`].
 
 use crate::IBig;
-use crate::ops::{UnaryOpDigits, impl_unary_operator};
+use crate::ops::{UnaryOpBig, impl_unary_operator};
 use crate::repr::Digits;
 use crate::repr::{
     AsDigits,
@@ -59,10 +59,13 @@ impl IBig {
     }
 }
 
-/// Negation operation.
-struct NegOperation;
+/// Negation for [`IBig`].
+enum NegIBig {}
 
-impl UnaryOpDigits<IBig> for NegOperation {
+impl UnaryOpBig for NegIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit(operand: SignedDigit) -> IBig {
         let (neg, overflow) = operand.overflowing_neg();
         if overflow {
@@ -77,7 +80,7 @@ impl UnaryOpDigits<IBig> for NegOperation {
         // Clone with room for a possible sign digit.
         let mut digits = Digits::with_capacity(operand.len() + 1);
         digits.extend_from_slice(operand);
-        Self::apply_val(digits)
+        <Self as UnaryOpBig>::apply_val(digits)
     }
 
     fn apply_val(mut operand: Digits) -> IBig {
@@ -86,4 +89,4 @@ impl UnaryOpDigits<IBig> for NegOperation {
     }
 }
 
-impl_unary_operator!(IBig, Neg::neg, NegOperation);
+impl_unary_operator!(Neg::neg(IBig) -> IBig, NegIBig);
