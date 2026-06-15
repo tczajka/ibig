@@ -1,7 +1,7 @@
 //! Bitwise operators for [`UBig`] and [`IBig`].
 
 use crate::ops::{
-    CommutativeBinaryOpDigits, DigitsRhs, UnaryOpBig, impl_binary_operator, impl_unary_operator,
+    BigBig, CommutativeBinaryOpBig, UnaryOpBig, impl_binary_operator, impl_unary_operator,
 };
 use crate::repr::{
     AsDigits,
@@ -76,10 +76,13 @@ impl UnaryOpBig for NotIBig {
 
 impl_unary_operator!(Not::not(IBig) -> IBig, NotIBig);
 
-/// Bitwise AND operation.
-struct BitAndOperation;
+/// Bitwise AND operation for [`UBig`].
+enum BitAndUBigUBig {}
 
-impl CommutativeBinaryOpDigits<UBig> for BitAndOperation {
+impl CommutativeBinaryOpBig for BitAndUBigUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs & rhs)
     }
@@ -117,14 +120,18 @@ impl CommutativeBinaryOpDigits<UBig> for BitAndOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    UBig,
-    BitAnd::bitand,
+    BitAnd::bitand(UBig, UBig) -> UBig,
     BitAndAssign::bitand_assign,
-    DigitsRhs<BitAndOperation>
+    BigBig<BitAndUBigUBig>
 );
 
-impl CommutativeBinaryOpDigits<IBig> for BitAndOperation {
+/// Bitwise AND operation for [`IBig`].
+enum BitAndIBigIBig {}
+
+impl CommutativeBinaryOpBig for BitAndIBigIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs & rhs)
     }
@@ -201,17 +208,18 @@ impl CommutativeBinaryOpDigits<IBig> for BitAndOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    IBig,
-    BitAnd::bitand,
+    BitAnd::bitand(IBig, IBig) -> IBig,
     BitAndAssign::bitand_assign,
-    DigitsRhs<BitAndOperation>
+    BigBig<BitAndIBigIBig>
 );
 
-/// Bitwise OR operation.
-struct BitOrOperation;
+/// Bitwise OR operation for [`UBig`].
+enum BitOrUBigUBig {}
 
-impl CommutativeBinaryOpDigits<UBig> for BitOrOperation {
+impl CommutativeBinaryOpBig for BitOrUBigUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs | rhs)
     }
@@ -258,14 +266,18 @@ impl CommutativeBinaryOpDigits<UBig> for BitOrOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    UBig,
-    BitOr::bitor,
+    BitOr::bitor(UBig, UBig) -> UBig,
     BitOrAssign::bitor_assign,
-    DigitsRhs<BitOrOperation>
+    BigBig<BitOrUBigUBig>
 );
 
-impl CommutativeBinaryOpDigits<IBig> for BitOrOperation {
+/// Bitwise OR operation for [`IBig`].
+enum BitOrIBigIBig {}
+
+impl CommutativeBinaryOpBig for BitOrIBigIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs | rhs)
     }
@@ -343,17 +355,18 @@ impl CommutativeBinaryOpDigits<IBig> for BitOrOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    IBig,
-    BitOr::bitor,
+    BitOr::bitor(IBig, IBig) -> IBig,
     BitOrAssign::bitor_assign,
-    DigitsRhs<BitOrOperation>
+    BigBig<BitOrIBigIBig>
 );
 
-/// Bitwise XOR operation.
-struct BitXorOperation;
+/// Bitwise XOR operation for [`UBig`].
+enum BitXorUBigUBig {}
 
-impl CommutativeBinaryOpDigits<UBig> for BitXorOperation {
+impl CommutativeBinaryOpBig for BitXorUBigUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs ^ rhs)
     }
@@ -400,14 +413,18 @@ impl CommutativeBinaryOpDigits<UBig> for BitXorOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    UBig,
-    BitXor::bitxor,
+    BitXor::bitxor(UBig, UBig) -> UBig,
     BitXorAssign::bitxor_assign,
-    DigitsRhs<BitXorOperation>
+    BigBig<BitXorUBigUBig>
 );
 
-impl CommutativeBinaryOpDigits<IBig> for BitXorOperation {
+/// Bitwise XOR operation for [`IBig`].
+enum BitXorIBigIBig {}
+
+impl CommutativeBinaryOpBig for BitXorIBigIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs ^ rhs)
     }
@@ -468,9 +485,7 @@ impl CommutativeBinaryOpDigits<IBig> for BitXorOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    IBig,
-    BitXor::bitxor,
+    BitXor::bitxor(IBig, IBig) -> IBig,
     BitXorAssign::bitxor_assign,
-    DigitsRhs<BitXorOperation>
+    BigBig<BitXorIBigIBig>
 );

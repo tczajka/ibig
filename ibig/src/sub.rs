@@ -1,6 +1,6 @@
 //! Subtraction.
 
-use crate::ops::{BinaryOpDigits, DigitsRhs, impl_binary_operator};
+use crate::ops::{BigBig, BinaryOpBigBig, impl_binary_operator};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -26,7 +26,7 @@ impl UBig {
             // A multi-digit `rhs` is bigger than any single digit.
             (Small(_), Large(_)) => None,
             // A multi-digit `lhs` minus a single digit never underflows.
-            (Large(lhs), Small(b)) => Some(SubOperation::apply_ref_digit(lhs, b)),
+            (Large(lhs), Small(b)) => Some(SubUBigUBig::apply_ref_digit(lhs, b)),
             (Large(lhs), Large(rhs)) => Self::checked_sub_large(lhs, rhs),
         }
     }
@@ -59,10 +59,14 @@ impl UBig {
     }
 }
 
-/// Subtraction operation.
-struct SubOperation;
+/// Subtraction operation for [`UBig`].
+enum SubUBigUBig {}
 
-impl BinaryOpDigits<UBig> for SubOperation {
+impl BinaryOpBigBig for SubUBigUBig {
+    type Left = UBig;
+    type Right = UBig;
+    type Output = UBig;
+
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         let (diff, borrow) = lhs.overflowing_sub(rhs);
         if borrow {
@@ -129,14 +133,19 @@ impl BinaryOpDigits<UBig> for SubOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    UBig,
-    Sub::sub,
+    Sub::sub(UBig, UBig) -> UBig,
     SubAssign::sub_assign,
-    DigitsRhs<SubOperation>
+    BigBig<SubUBigUBig>
 );
 
-impl BinaryOpDigits<IBig> for SubOperation {
+/// Subtraction operation for [`IBig`].
+enum SubIBigIBig {}
+
+impl BinaryOpBigBig for SubIBigIBig {
+    type Left = IBig;
+    type Right = IBig;
+    type Output = IBig;
+
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         let (diff, overflow) = lhs.overflowing_sub(rhs);
         if overflow {
@@ -217,9 +226,7 @@ impl BinaryOpDigits<IBig> for SubOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    IBig,
-    Sub::sub,
+    Sub::sub(IBig, IBig) -> IBig,
     SubAssign::sub_assign,
-    DigitsRhs<SubOperation>
+    BigBig<SubIBigIBig>
 );

@@ -91,262 +91,312 @@ macro_rules! impl_unary_operator {
 
 pub(crate) use impl_unary_operator;
 
-/// A binary operation taking a left operand of type `L` and a right operand of type `R`,
-/// producing a value of type `L`.
+/// A binary operation.
 ///
 /// Each operand appears can be borrowed or owned.
-pub(crate) trait BinaryOp<L: Default, R> {
+pub(crate) trait BinaryOp {
+    /// The type of the left operand.
+    type Left;
+
+    /// The type of the right operand.
+    type Right;
+
+    /// The type of the result.
+    type Output;
+
     /// Both operands are borrowed.
-    fn apply_ref_ref(lhs: &L, rhs: &R) -> L;
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output;
 
     /// Left operand is borrowed, right operand owned.
-    fn apply_ref_val(lhs: &L, rhs: R) -> L;
+    fn apply_ref_val(lhs: &Self::Left, rhs: Self::Right) -> Self::Output;
 
     /// Left operand is owned, right operand borrowed.
-    fn apply_val_ref(lhs: L, rhs: &R) -> L;
+    fn apply_val_ref(lhs: Self::Left, rhs: &Self::Right) -> Self::Output;
 
     /// Both operands are owned.
-    fn apply_val_val(lhs: L, rhs: R) -> L;
+    fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output;
 }
 
-/// A binary operation implemented on the digit representation of a number.
+/// A binary operation on big numbers.
 ///
 /// Each operand appears in one of three forms: a single digit (`digit`), a borrowed slice
 /// (`ref`), or an owned buffer (`val`).
-pub(crate) trait BinaryOpDigits<T: AsDigits> {
+pub(crate) trait BinaryOpBigBig {
+    /// The type of the left operand.
+    type Left: AsDigits;
+
+    /// The type of the right operand.
+    type Right: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
     /// Both operands are single digits.
-    fn apply_digit_digit(lhs: T::SingleDigit, rhs: T::SingleDigit) -> T;
+    fn apply_digit_digit(
+        lhs: <Self::Left as AsDigits>::SingleDigit,
+        rhs: <Self::Right as AsDigits>::SingleDigit,
+    ) -> Self::Output;
 
     /// Left operand is a single digit, right operand a borrowed slice.
-    fn apply_digit_ref(lhs: T::SingleDigit, rhs: &[Digit]) -> T;
+    fn apply_digit_ref(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: &[Digit]) -> Self::Output;
 
     /// Left operand is a single digit, right operand an owned buffer.
-    fn apply_digit_val(lhs: T::SingleDigit, rhs: Digits) -> T;
+    fn apply_digit_val(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Digits) -> Self::Output;
 
     /// Left operand is a borrowed slice, right operand a single digit.
-    fn apply_ref_digit(lhs: &[Digit], rhs: T::SingleDigit) -> T;
+    fn apply_ref_digit(lhs: &[Digit], rhs: <Self::Right as AsDigits>::SingleDigit) -> Self::Output;
 
     /// Both operands are borrowed slices.
-    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> T;
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output;
 
     /// Left operand is a borrowed slice, right operand an owned buffer.
-    fn apply_ref_val(lhs: &[Digit], rhs: Digits) -> T;
+    fn apply_ref_val(lhs: &[Digit], rhs: Digits) -> Self::Output;
 
     /// Left operand is an owned buffer, right operand a single digit.
-    fn apply_val_digit(lhs: Digits, rhs: T::SingleDigit) -> T;
+    fn apply_val_digit(lhs: Digits, rhs: <Self::Right as AsDigits>::SingleDigit) -> Self::Output;
 
     /// Left operand is an owned buffer, right operand a borrowed slice.
-    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> T;
+    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> Self::Output;
 
     /// Both operands are owned buffers.
-    fn apply_val_val(lhs: Digits, rhs: Digits) -> T;
+    fn apply_val_val(lhs: Digits, rhs: Digits) -> Self::Output;
 }
 
-/// A binary operation implemented on the digit representation of a number, with a primitive
-/// `Copy` right operand (e.g. a shift amount).
-///
-/// The left operand appears in one of three forms: a single digit (`digit`), a borrowed
-/// slice (`ref`), or an owned buffer (`val`); the right operand is passed by value.
-pub(crate) trait BinaryOpDigitsPrimitive<L: AsDigits, R: Copy> {
-    /// The left operand is a single digit.
-    fn apply_digit(lhs: L::SingleDigit, rhs: R) -> L;
-
-    /// The left operand is a borrowed slice.
-    fn apply_ref(lhs: &[Digit], rhs: R) -> L;
-
-    /// The left operand is an owned buffer.
-    fn apply_val(lhs: Digits, rhs: R) -> L;
-}
-
-/// A commutative binary operation implemented on the digit representation of a number.
+/// A commutative binary operation on big numbers.
 ///
 /// Each operand appears in one of three forms: a single digit (`digit`), a borrowed slice
 /// (`ref`), or an owned buffer (`val`).
-pub(crate) trait CommutativeBinaryOpDigits<T: AsDigits> {
+pub(crate) trait CommutativeBinaryOpBig {
+    /// The type of operands.
+    type Operand: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
     /// Both operands are single digits.
-    fn apply_digit_digit(lhs: T::SingleDigit, rhs: T::SingleDigit) -> T;
+    fn apply_digit_digit(
+        lhs: <Self::Operand as AsDigits>::SingleDigit,
+        rhs: <Self::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output;
 
     /// One operand is a borrowed slice, the other a single digit.
-    fn apply_ref_digit(lhs: &[Digit], rhs: T::SingleDigit) -> T;
+    fn apply_ref_digit(
+        lhs: &[Digit],
+        rhs: <Self::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output;
 
     /// Both operands are borrowed slices.
-    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> T;
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output;
 
     /// One operand is an owned buffer, the other a single digit.
-    fn apply_val_digit(lhs: Digits, rhs: T::SingleDigit) -> T;
+    fn apply_val_digit(lhs: Digits, rhs: <Self::Operand as AsDigits>::SingleDigit) -> Self::Output;
 
     /// One operand is an owned buffer, the other a borrowed slice.
-    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> T;
+    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> Self::Output;
 
     /// Both operands are owned buffers.
-    fn apply_val_val(lhs: Digits, rhs: Digits) -> T;
+    fn apply_val_val(lhs: Digits, rhs: Digits) -> Self::Output;
 }
 
-/// Selects the [`BinaryOpDigits`] derivation of [`BinaryOp`] for the marker type `Op`.
-pub(crate) struct DigitsRhs<Op>(Op);
+/// A binary operation implemented on a big number and another value.
+///
+/// The big number appears in one of three forms: a single digit (`digit`), a borrowed
+/// slice (`ref`), or an owned buffer (`val`); the right operand is passed by value.
+pub(crate) trait BinaryOpBigOther {
+    /// The type of the left operand.
+    type Left: AsDigits;
 
-/// Selects the [`BinaryOpDigitsPrimitive`] derivation of [`BinaryOp`] for the marker type
-/// `Op`.
-pub(crate) struct PrimitiveRhs<Op>(Op);
+    /// The type of the right operand.
+    type Right;
 
-/// Every [`BinaryOpDigits`] induces a [`BinaryOp`] over a single type.
-impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
-    fn apply_ref_ref(lhs: &T, rhs: &T) -> T {
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is a single digit.
+    fn apply_digit(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is a borrowed slice.
+    fn apply_ref(lhs: &[Digit], rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is an owned buffer.
+    fn apply_val(lhs: Digits, rhs: Self::Right) -> Self::Output;
+}
+
+/// Wrapper indicating a [`BinaryOpBigBig`].
+pub(crate) struct BigBig<Op>(Op);
+
+/// Wrapper indicating a [`BinaryOpBigOther`].
+pub(crate) struct BigOther<Op>(Op);
+
+/// Every [`BinaryOpBigBig`] induces a [`BinaryOp`].
+impl<Op: BinaryOpBigBig> BinaryOp for BigBig<Op> {
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
+
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output {
         match (lhs.as_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
-            (Small(a), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_digit_ref(a, rhs),
-            (Large(lhs), Small(b)) => <Op as BinaryOpDigits<T>>::apply_ref_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_ref_ref(lhs, rhs),
+            (Small(a), Small(b)) => <Op as BinaryOpBigBig>::apply_digit_digit(a, b),
+            (Small(a), Large(b)) => <Op as BinaryOpBigBig>::apply_digit_ref(a, b),
+            (Large(a), Small(b)) => <Op as BinaryOpBigBig>::apply_ref_digit(a, b),
+            (Large(a), Large(b)) => <Op as BinaryOpBigBig>::apply_ref_ref(a, b),
         }
     }
 
-    fn apply_ref_val(lhs: &T, rhs: T) -> T {
+    fn apply_ref_val(lhs: &Self::Left, rhs: Self::Right) -> Self::Output {
         match (lhs.as_digits(), rhs.into_digits()) {
-            (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
-            (Small(a), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_digit_val(a, rhs),
-            (Large(lhs), Small(b)) => <Op as BinaryOpDigits<T>>::apply_ref_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_ref_val(lhs, rhs),
+            (Small(a), Small(b)) => <Op as BinaryOpBigBig>::apply_digit_digit(a, b),
+            (Small(a), Large(b)) => <Op as BinaryOpBigBig>::apply_digit_val(a, b),
+            (Large(a), Small(b)) => <Op as BinaryOpBigBig>::apply_ref_digit(a, b),
+            (Large(a), Large(b)) => <Op as BinaryOpBigBig>::apply_ref_val(a, b),
         }
     }
 
-    fn apply_val_ref(lhs: T, rhs: &T) -> T {
+    fn apply_val_ref(lhs: Self::Left, rhs: &Self::Right) -> Self::Output {
         match (lhs.into_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
-            (Small(a), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_digit_ref(a, rhs),
-            (Large(lhs), Small(b)) => <Op as BinaryOpDigits<T>>::apply_val_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_val_ref(lhs, rhs),
+            (Small(a), Small(b)) => <Op as BinaryOpBigBig>::apply_digit_digit(a, b),
+            (Small(a), Large(b)) => <Op as BinaryOpBigBig>::apply_digit_ref(a, b),
+            (Large(a), Small(b)) => <Op as BinaryOpBigBig>::apply_val_digit(a, b),
+            (Large(a), Large(b)) => <Op as BinaryOpBigBig>::apply_val_ref(a, b),
         }
     }
 
-    fn apply_val_val(lhs: T, rhs: T) -> T {
+    fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output {
         match (lhs.into_digits(), rhs.into_digits()) {
-            (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
-            (Small(a), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_digit_val(a, rhs),
-            (Large(lhs), Small(b)) => <Op as BinaryOpDigits<T>>::apply_val_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => <Op as BinaryOpDigits<T>>::apply_val_val(lhs, rhs),
+            (Small(a), Small(b)) => <Op as BinaryOpBigBig>::apply_digit_digit(a, b),
+            (Small(a), Large(b)) => <Op as BinaryOpBigBig>::apply_digit_val(a, b),
+            (Large(a), Small(b)) => <Op as BinaryOpBigBig>::apply_val_digit(a, b),
+            (Large(a), Large(b)) => <Op as BinaryOpBigBig>::apply_val_val(a, b),
         }
     }
 }
 
-/// Every [`BinaryOpDigitsPrimitive`] induces a [`BinaryOp`] with a primitive right operand.
-impl<L: AsDigits, R: Copy, Op: BinaryOpDigitsPrimitive<L, R>> BinaryOp<L, R> for PrimitiveRhs<Op> {
-    fn apply_ref_ref(lhs: &L, rhs: &R) -> L {
+/// Every [`BinaryOpBigOther`] with a `Copy` right operand induces a [`BinaryOp`].
+impl<Op: BinaryOpBigOther> BinaryOp for BigOther<Op>
+where
+    Op::Right: Copy,
+{
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
+
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output {
         Self::apply_ref_val(lhs, *rhs)
     }
 
-    fn apply_ref_val(lhs: &L, rhs: R) -> L {
+    fn apply_ref_val(lhs: &Self::Left, rhs: Self::Right) -> Self::Output {
         match lhs.as_digits() {
-            Small(digit) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_digit(digit, rhs),
-            Large(digits) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_ref(digits, rhs),
+            Small(a) => <Op as BinaryOpBigOther>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpBigOther>::apply_ref(a, rhs),
         }
     }
 
-    fn apply_val_ref(lhs: L, rhs: &R) -> L {
+    fn apply_val_ref(lhs: Self::Left, rhs: &Self::Right) -> Self::Output {
         Self::apply_val_val(lhs, *rhs)
     }
 
-    fn apply_val_val(lhs: L, rhs: R) -> L {
+    fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output {
         match lhs.into_digits() {
-            Small(digit) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_digit(digit, rhs),
-            Large(digits) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_val(digits, rhs),
+            Small(a) => <Op as BinaryOpBigOther>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpBigOther>::apply_val(a, rhs),
         }
     }
 }
 
-/// Every [`CommutativeBinaryOpDigits`] is a [`BinaryOpDigits`].
-impl<T: AsDigits, Op: CommutativeBinaryOpDigits<T>> BinaryOpDigits<T> for Op {
-    fn apply_digit_digit(lhs: T::SingleDigit, rhs: T::SingleDigit) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_digit_digit(lhs, rhs)
+/// Every [`CommutativeBinaryOpBig`] is a [`BinaryOpBigBig`].
+impl<Op: CommutativeBinaryOpBig> BinaryOpBigBig for Op {
+    type Left = Op::Operand;
+    type Right = Op::Operand;
+    type Output = Op::Output;
+
+    fn apply_digit_digit(
+        lhs: <Op::Operand as AsDigits>::SingleDigit,
+        rhs: <Op::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_digit_digit(lhs, rhs)
     }
 
-    fn apply_digit_ref(lhs: T::SingleDigit, rhs: &[Digit]) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_ref_digit(rhs, lhs)
+    fn apply_digit_ref(lhs: <Op::Operand as AsDigits>::SingleDigit, rhs: &[Digit]) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_ref_digit(rhs, lhs)
     }
 
-    fn apply_digit_val(lhs: T::SingleDigit, rhs: Digits) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_val_digit(rhs, lhs)
+    fn apply_digit_val(lhs: <Op::Operand as AsDigits>::SingleDigit, rhs: Digits) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_val_digit(rhs, lhs)
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: T::SingleDigit) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_ref_digit(lhs, rhs)
+    fn apply_ref_digit(lhs: &[Digit], rhs: <Op::Operand as AsDigits>::SingleDigit) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_ref_digit(lhs, rhs)
     }
 
-    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_ref_ref(lhs, rhs)
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_ref_ref(lhs, rhs)
     }
 
-    fn apply_ref_val(lhs: &[Digit], rhs: Digits) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_val_ref(rhs, lhs)
+    fn apply_ref_val(lhs: &[Digit], rhs: Digits) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_val_ref(rhs, lhs)
     }
 
-    fn apply_val_digit(lhs: Digits, rhs: T::SingleDigit) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_val_digit(lhs, rhs)
+    fn apply_val_digit(lhs: Digits, rhs: <Op::Operand as AsDigits>::SingleDigit) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_val_digit(lhs, rhs)
     }
 
-    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_val_ref(lhs, rhs)
+    fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_val_ref(lhs, rhs)
     }
 
-    fn apply_val_val(lhs: Digits, rhs: Digits) -> T {
-        <Op as CommutativeBinaryOpDigits<T>>::apply_val_val(lhs, rhs)
+    fn apply_val_val(lhs: Digits, rhs: Digits) -> Self::Output {
+        <Op as CommutativeBinaryOpBig>::apply_val_val(lhs, rhs)
     }
 }
 
-/// Implements a binary operator and its assigning counterpart for a left operand type `$left` and
+/// Implements a binary operator for a left operand type `$left` and
 /// right operand type `$right`, deriving every owned/borrowed operand combination from a
-/// [`BinaryOp`] implemented by the marker type `$op`. The output type is `$left`.
+/// [`BinaryOp`] implemented by the marker type `$op`.
 ///
-/// `$trait`/`$method` and `$assign_trait`/`$assign_method` are the operator and assigning-operator
-/// traits; they must be in scope at the call site.
+/// `$trait`/`$method` is the operator trait; it must be in scope at the call site.
 macro_rules! impl_binary_operator {
-    ($left:ty, $right:ty, $trait:ident :: $method:ident, $assign_trait:ident :: $assign_method:ident, $op:ty) => {
+    ($trait:ident :: $method:ident($left:ty, $right:ty) -> $output:ty, $assign_trait:ident :: $assign_method:ident, $op:ty) => {
         impl $trait<$right> for $left {
-            type Output = $left;
+            type Output = $output;
 
-            fn $method(self, rhs: $right) -> $left {
-                <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_val(self, rhs)
+            fn $method(self, rhs: $right) -> $output {
+                <$op as $crate::ops::BinaryOp>::apply_val_val(self, rhs)
             }
         }
 
         impl $trait<&$right> for $left {
-            type Output = $left;
+            type Output = $output;
 
-            fn $method(self, rhs: &$right) -> $left {
-                <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_ref(self, rhs)
+            fn $method(self, rhs: &$right) -> $output {
+                <$op as $crate::ops::BinaryOp>::apply_val_ref(self, rhs)
             }
         }
 
         impl $trait<$right> for &$left {
-            type Output = $left;
+            type Output = $output;
 
-            fn $method(self, rhs: $right) -> $left {
-                <$op as $crate::ops::BinaryOp<$left, $right>>::apply_ref_val(self, rhs)
+            fn $method(self, rhs: $right) -> $output {
+                <$op as $crate::ops::BinaryOp>::apply_ref_val(self, rhs)
             }
         }
 
         impl $trait<&$right> for &$left {
-            type Output = $left;
+            type Output = $output;
 
-            fn $method(self, rhs: &$right) -> $left {
-                <$op as $crate::ops::BinaryOp<$left, $right>>::apply_ref_ref(self, rhs)
+            fn $method(self, rhs: &$right) -> $output {
+                <$op as $crate::ops::BinaryOp>::apply_ref_ref(self, rhs)
             }
         }
 
         impl $assign_trait<$right> for $left {
             fn $assign_method(&mut self, rhs: $right) {
-                *self = <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_val(
-                    ::core::mem::take(self),
-                    rhs,
-                );
+                *self = <$op as $crate::ops::BinaryOp>::apply_val_val(::core::mem::take(self), rhs);
             }
         }
 
         impl $assign_trait<&$right> for $left {
             fn $assign_method(&mut self, rhs: &$right) {
-                *self = <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_ref(
-                    ::core::mem::take(self),
-                    rhs,
-                );
+                *self = <$op as $crate::ops::BinaryOp>::apply_val_ref(::core::mem::take(self), rhs);
             }
         }
     };

@@ -1,6 +1,6 @@
 //! Addition.
 
-use crate::ops::{CommutativeBinaryOpDigits, DigitsRhs, impl_binary_operator};
+use crate::ops::{BigBig, CommutativeBinaryOpBig, impl_binary_operator};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -195,10 +195,13 @@ impl IBig {
     }
 }
 
-/// Addition operation.
-struct AddOperation;
+/// Addition operation for [`UBig`].
+enum AddUBigUBig {}
 
-impl CommutativeBinaryOpDigits<UBig> for AddOperation {
+impl CommutativeBinaryOpBig for AddUBigUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         let (sum, carry) = lhs.overflowing_add(rhs);
         UBig::from_two_digits(sum, carry.into())
@@ -257,14 +260,18 @@ impl CommutativeBinaryOpDigits<UBig> for AddOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    UBig,
-    Add::add,
+    Add::add(UBig, UBig) -> UBig,
     AddAssign::add_assign,
-    DigitsRhs<AddOperation>
+    BigBig<AddUBigUBig>
 );
 
-impl CommutativeBinaryOpDigits<IBig> for AddOperation {
+/// Addition operation for [`IBig`].
+enum AddIBigIBig {}
+
+impl CommutativeBinaryOpBig for AddIBigIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         let (sum, overflow) = lhs.overflowing_add(rhs);
         if overflow {
@@ -324,9 +331,7 @@ impl CommutativeBinaryOpDigits<IBig> for AddOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    IBig,
-    Add::add,
+    Add::add(IBig, IBig) -> IBig,
     AddAssign::add_assign,
-    DigitsRhs<AddOperation>
+    BigBig<AddIBigIBig>
 );

@@ -1,16 +1,20 @@
 //! Bit shift operators (`Shl`, `Shr`) for [`UBig`] and [`IBig`] by a `usize` amount.
 
-use crate::ops::{BinaryOpDigitsPrimitive, PrimitiveRhs, impl_binary_operator};
+use crate::ops::{BigOther, BinaryOpBigOther, impl_binary_operator};
 use crate::repr::{Digits, MAX_DIGITS, panic_number_too_large};
 use crate::{IBig, UBig};
 use core::iter::repeat_n;
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
 use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, SignedDigit};
 
-/// Left shift.
-struct ShlOperation;
+/// Left shift of a [`UBig`].
+enum ShlUBig {}
 
-impl BinaryOpDigitsPrimitive<UBig, usize> for ShlOperation {
+impl BinaryOpBigOther for ShlUBig {
+    type Left = UBig;
+    type Right = usize;
+    type Output = UBig;
+
     fn apply_digit(lhs: Digit, rhs: usize) -> UBig {
         // Shifting zero is zero (and avoids allocating `rhs / DIGIT_BITS` zero digits).
         if lhs == Digit::ZERO {
@@ -63,14 +67,19 @@ impl BinaryOpDigitsPrimitive<UBig, usize> for ShlOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    usize,
-    Shl::shl,
+    Shl::shl(UBig, usize) -> UBig,
     ShlAssign::shl_assign,
-    PrimitiveRhs<ShlOperation>
+    BigOther<ShlUBig>
 );
 
-impl BinaryOpDigitsPrimitive<IBig, usize> for ShlOperation {
+/// Left shift of an [`IBig`].
+enum ShlIBig {}
+
+impl BinaryOpBigOther for ShlIBig {
+    type Left = IBig;
+    type Right = usize;
+    type Output = IBig;
+
     fn apply_digit(lhs: SignedDigit, rhs: usize) -> IBig {
         // Shifting zero is zero (and avoids allocating `rhs / DIGIT_BITS` zero digits).
         if lhs == SignedDigit::ZERO {
@@ -124,17 +133,19 @@ impl BinaryOpDigitsPrimitive<IBig, usize> for ShlOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    usize,
-    Shl::shl,
+    Shl::shl(IBig, usize) -> IBig,
     ShlAssign::shl_assign,
-    PrimitiveRhs<ShlOperation>
+    BigOther<ShlIBig>
 );
 
-/// Right shift.
-struct ShrOperation;
+/// Right shift of a [`UBig`].
+enum ShrUBig {}
 
-impl BinaryOpDigitsPrimitive<UBig, usize> for ShrOperation {
+impl BinaryOpBigOther for ShrUBig {
+    type Left = UBig;
+    type Right = usize;
+    type Output = UBig;
+
     fn apply_digit(lhs: Digit, rhs: usize) -> UBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() != 0 {
@@ -166,14 +177,19 @@ impl BinaryOpDigitsPrimitive<UBig, usize> for ShrOperation {
 }
 
 impl_binary_operator!(
-    UBig,
-    usize,
-    Shr::shr,
+    Shr::shr(UBig, usize) -> UBig,
     ShrAssign::shr_assign,
-    PrimitiveRhs<ShrOperation>
+    BigOther<ShrUBig>
 );
 
-impl BinaryOpDigitsPrimitive<IBig, usize> for ShrOperation {
+/// Right shift of an [`IBig`].
+enum ShrIBig {}
+
+impl BinaryOpBigOther for ShrIBig {
+    type Left = IBig;
+    type Right = usize;
+    type Output = IBig;
+
     fn apply_digit(lhs: SignedDigit, rhs: usize) -> IBig {
         // Beyond `DIGIT_BITS - 1`, the arithmetic shift saturates to the sign.
         let small: u32 = rhs.min(DIGIT_BITS_USIZE - 1).try_into().unwrap();
@@ -203,11 +219,9 @@ impl BinaryOpDigitsPrimitive<IBig, usize> for ShrOperation {
 }
 
 impl_binary_operator!(
-    IBig,
-    usize,
-    Shr::shr,
+    Shr::shr(IBig, usize) -> IBig,
     ShrAssign::shr_assign,
-    PrimitiveRhs<ShrOperation>
+    BigOther<ShrIBig>
 );
 
 impl IBig {
