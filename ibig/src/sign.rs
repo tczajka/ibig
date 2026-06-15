@@ -1,7 +1,7 @@
 //! Sign operations on [`IBig`].
 
 use crate::IBig;
-use crate::ops::{UnaryOpBig, impl_unary_operator};
+use crate::ops::{UnaryOpRefValBig, impl_unary_operator};
 use crate::repr::Digits;
 use crate::repr::{
     AsDigits,
@@ -62,7 +62,7 @@ impl IBig {
 /// Negation for [`IBig`].
 enum NegIBig {}
 
-impl UnaryOpBig for NegIBig {
+impl UnaryOpRefValBig for NegIBig {
     type Operand = IBig;
     type Output = IBig;
 
@@ -80,7 +80,7 @@ impl UnaryOpBig for NegIBig {
         // Clone with room for a possible sign digit.
         let mut digits = Digits::with_capacity(operand.len() + 1);
         digits.extend_from_slice(operand);
-        <Self as UnaryOpBig>::apply_val(digits)
+        <Self as UnaryOpRefValBig>::apply_val(digits)
     }
 
     fn apply_val(mut operand: Digits) -> IBig {

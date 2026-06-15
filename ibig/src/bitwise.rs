@@ -1,7 +1,7 @@
 //! Bitwise operators for [`UBig`] and [`IBig`].
 
 use crate::ops::{
-    BigBig, CommutativeBinaryOpBig, UnaryOpBig, impl_binary_operator, impl_unary_operator,
+    BigBig, CommutativeBinaryOpBig, UnaryOpRefValBig, impl_binary_operator, impl_unary_operator,
 };
 use crate::repr::{
     AsDigits,
@@ -56,7 +56,7 @@ impl UBig {
 /// Bitwise NOT operation for [`IBig`].
 enum NotIBig {}
 
-impl UnaryOpBig for NotIBig {
+impl UnaryOpRefValBig for NotIBig {
     type Operand = IBig;
     type Output = IBig;
 
