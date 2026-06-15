@@ -132,6 +132,36 @@ macro_rules! impl_unary_operator {
 
 pub(crate) use impl_unary_operator;
 
+/// A binary operation where the left operand is borrowed and the right is a `Copy` value.
+pub(crate) trait BinaryOpRefCopy {
+    /// The type of the left operand.
+    type Left;
+
+    /// The type of the right operand.
+    type Right: Copy;
+
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is borrowed, the right operand a `Copy` value.
+    fn apply_ref(lhs: &Self::Left, rhs: Self::Right) -> Self::Output;
+}
+
+/// A binary operation where both operands are borrowed.
+pub(crate) trait BinaryOpRef {
+    /// The type of the left operand.
+    type Left;
+
+    /// The type of the right operand.
+    type Right;
+
+    /// The type of the result.
+    type Output;
+
+    /// Both operands are borrowed.
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output;
+}
+
 /// A binary operation where each operand can be borrowed or owned.
 pub(crate) trait BinaryOpRefVal {
     /// The type of the left operand.
@@ -154,6 +184,81 @@ pub(crate) trait BinaryOpRefVal {
 
     /// Both operands are owned.
     fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output;
+}
+
+/// A binary operation on a big number and a `Copy` right operand, reading the big number
+/// without consuming it.
+///
+/// The big number appears as either a single digit (`digit`) or a borrowed slice (`ref`);
+/// the right operand is a `Copy` value.
+pub(crate) trait BinaryOpRefBigCopy {
+    /// The type of the left operand.
+    type Left: AsDigits;
+
+    /// The type of the right operand.
+    type Right: Copy;
+
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is a single digit.
+    fn apply_digit(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is a borrowed slice.
+    fn apply_ref(lhs: &[Digit], rhs: Self::Right) -> Self::Output;
+}
+
+/// A binary operation on big numbers, reading them without consuming them.
+///
+/// Each operand appears as either a single digit (`digit`) or a borrowed slice (`ref`).
+pub(crate) trait BinaryOpRefBigBig {
+    /// The type of the left operand.
+    type Left: AsDigits;
+
+    /// The type of the right operand.
+    type Right: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
+    /// Both operands are single digits.
+    fn apply_digit_digit(
+        lhs: <Self::Left as AsDigits>::SingleDigit,
+        rhs: <Self::Right as AsDigits>::SingleDigit,
+    ) -> Self::Output;
+
+    /// Left operand is a single digit, right operand a borrowed slice.
+    fn apply_digit_ref(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: &[Digit]) -> Self::Output;
+
+    /// Left operand is a borrowed slice, right operand a single digit.
+    fn apply_ref_digit(lhs: &[Digit], rhs: <Self::Right as AsDigits>::SingleDigit) -> Self::Output;
+
+    /// Both operands are borrowed slices.
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output;
+}
+
+/// A binary operation implemented on a big number and a `Copy` right operand.
+///
+/// The big number appears in one of three forms: a single digit (`digit`), a borrowed
+/// slice (`ref`), or an owned buffer (`val`); the right operand is a `Copy` value.
+pub(crate) trait BinaryOpRefValBigCopy {
+    /// The type of the left operand.
+    type Left: AsDigits;
+
+    /// The type of the right operand.
+    type Right: Copy;
+
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is a single digit.
+    fn apply_digit(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is a borrowed slice.
+    fn apply_ref(lhs: &[Digit], rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is an owned buffer.
+    fn apply_val(lhs: Digits, rhs: Self::Right) -> Self::Output;
 }
 
 /// A binary operation on big numbers.
@@ -237,35 +342,70 @@ pub(crate) trait CommutativeBinaryOpRefValBigBig {
     fn apply_val_val(lhs: Digits, rhs: Digits) -> Self::Output;
 }
 
-/// A binary operation implemented on a big number and a `Copy` right operand.
-///
-/// The big number appears in one of three forms: a single digit (`digit`), a borrowed
-/// slice (`ref`), or an owned buffer (`val`); the right operand is a `Copy` value.
-pub(crate) trait BinaryOpRefValBigCopy {
-    /// The type of the left operand.
-    type Left: AsDigits;
+/// Every [`BinaryOpRefBigCopy`] induces a [`BinaryOpRefCopy`].
+impl<Op: BinaryOpRefBigCopy> BinaryOpRefCopy for Op {
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
 
-    /// The type of the right operand.
-    type Right: Copy;
-
-    /// The type of the result.
-    type Output;
-
-    /// The left operand is a single digit.
-    fn apply_digit(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Self::Right) -> Self::Output;
-
-    /// The left operand is a borrowed slice.
-    fn apply_ref(lhs: &[Digit], rhs: Self::Right) -> Self::Output;
-
-    /// The left operand is an owned buffer.
-    fn apply_val(lhs: Digits, rhs: Self::Right) -> Self::Output;
+    fn apply_ref(lhs: &Self::Left, rhs: Self::Right) -> Self::Output {
+        match lhs.as_digits() {
+            Small(a) => <Op as BinaryOpRefBigCopy>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpRefBigCopy>::apply_ref(a, rhs),
+        }
+    }
 }
+
+/// Every [`BinaryOpRefBigBig`] induces a [`BinaryOpRef`].
+impl<Op: BinaryOpRefBigBig> BinaryOpRef for Op {
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
+
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output {
+        match (lhs.as_digits(), rhs.as_digits()) {
+            (Small(a), Small(b)) => <Op as BinaryOpRefBigBig>::apply_digit_digit(a, b),
+            (Small(a), Large(b)) => <Op as BinaryOpRefBigBig>::apply_digit_ref(a, b),
+            (Large(a), Small(b)) => <Op as BinaryOpRefBigBig>::apply_ref_digit(a, b),
+            (Large(a), Large(b)) => <Op as BinaryOpRefBigBig>::apply_ref_ref(a, b),
+        }
+    }
+}
+
+/// Wrapper indicating a [`BinaryOpRefValBigCopy`].
+pub(crate) struct BigCopy<Op>(Op);
 
 /// Wrapper indicating a [`BinaryOpRefValBigBig`].
 pub(crate) struct BigBig<Op>(Op);
 
-/// Wrapper indicating a [`BinaryOpRefValBigCopy`].
-pub(crate) struct BigCopy<Op>(Op);
+/// Every [`BinaryOpRefValBigCopy`] induces a [`BinaryOpRefVal`].
+impl<Op: BinaryOpRefValBigCopy> BinaryOpRefVal for BigCopy<Op> {
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
+
+    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output {
+        Self::apply_ref_val(lhs, *rhs)
+    }
+
+    fn apply_ref_val(lhs: &Self::Left, rhs: Self::Right) -> Self::Output {
+        match lhs.as_digits() {
+            Small(a) => <Op as BinaryOpRefValBigCopy>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpRefValBigCopy>::apply_ref(a, rhs),
+        }
+    }
+
+    fn apply_val_ref(lhs: Self::Left, rhs: &Self::Right) -> Self::Output {
+        Self::apply_val_val(lhs, *rhs)
+    }
+
+    fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output {
+        match lhs.into_digits() {
+            Small(a) => <Op as BinaryOpRefValBigCopy>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpRefValBigCopy>::apply_val(a, rhs),
+        }
+    }
+}
 
 /// Every [`BinaryOpRefValBigBig`] induces a [`BinaryOpRefVal`].
 impl<Op: BinaryOpRefValBigBig> BinaryOpRefVal for BigBig<Op> {
@@ -306,35 +446,6 @@ impl<Op: BinaryOpRefValBigBig> BinaryOpRefVal for BigBig<Op> {
             (Small(a), Large(b)) => <Op as BinaryOpRefValBigBig>::apply_digit_val(a, b),
             (Large(a), Small(b)) => <Op as BinaryOpRefValBigBig>::apply_val_digit(a, b),
             (Large(a), Large(b)) => <Op as BinaryOpRefValBigBig>::apply_val_val(a, b),
-        }
-    }
-}
-
-/// Every [`BinaryOpRefValBigCopy`] induces a [`BinaryOpRefVal`].
-impl<Op: BinaryOpRefValBigCopy> BinaryOpRefVal for BigCopy<Op> {
-    type Left = Op::Left;
-    type Right = Op::Right;
-    type Output = Op::Output;
-
-    fn apply_ref_ref(lhs: &Self::Left, rhs: &Self::Right) -> Self::Output {
-        Self::apply_ref_val(lhs, *rhs)
-    }
-
-    fn apply_ref_val(lhs: &Self::Left, rhs: Self::Right) -> Self::Output {
-        match lhs.as_digits() {
-            Small(a) => <Op as BinaryOpRefValBigCopy>::apply_digit(a, rhs),
-            Large(a) => <Op as BinaryOpRefValBigCopy>::apply_ref(a, rhs),
-        }
-    }
-
-    fn apply_val_ref(lhs: Self::Left, rhs: &Self::Right) -> Self::Output {
-        Self::apply_val_val(lhs, *rhs)
-    }
-
-    fn apply_val_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output {
-        match lhs.into_digits() {
-            Small(a) => <Op as BinaryOpRefValBigCopy>::apply_digit(a, rhs),
-            Large(a) => <Op as BinaryOpRefValBigCopy>::apply_val(a, rhs),
         }
     }
 }
