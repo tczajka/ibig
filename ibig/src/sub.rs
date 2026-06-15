@@ -1,6 +1,6 @@
 //! Subtraction.
 
-use crate::ops::{BigBig, BinaryOpBigBig, impl_binary_operator};
+use crate::ops::{BigBig, BinaryOpRefValBigBig, impl_binary_operator};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -62,7 +62,7 @@ impl UBig {
 /// Subtraction operation for [`UBig`].
 enum SubUBigUBig {}
 
-impl BinaryOpBigBig for SubUBigUBig {
+impl BinaryOpRefValBigBig for SubUBigUBig {
     type Left = UBig;
     type Right = UBig;
     type Output = UBig;
@@ -141,7 +141,7 @@ impl_binary_operator!(
 /// Subtraction operation for [`IBig`].
 enum SubIBigIBig {}
 
-impl BinaryOpBigBig for SubIBigIBig {
+impl BinaryOpRefValBigBig for SubIBigIBig {
     type Left = IBig;
     type Right = IBig;
     type Output = IBig;

@@ -1,6 +1,6 @@
 //! Bit shift operators (`Shl`, `Shr`) for [`UBig`] and [`IBig`] by a `usize` amount.
 
-use crate::ops::{BigOther, BinaryOpBigOther, impl_binary_operator};
+use crate::ops::{BigCopy, BinaryOpRefValBigCopy, impl_binary_operator};
 use crate::repr::{Digits, MAX_DIGITS, panic_number_too_large};
 use crate::{IBig, UBig};
 use core::iter::repeat_n;
@@ -10,7 +10,7 @@ use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, SignedDigit};
 /// Left shift of a [`UBig`].
 enum ShlUBig {}
 
-impl BinaryOpBigOther for ShlUBig {
+impl BinaryOpRefValBigCopy for ShlUBig {
     type Left = UBig;
     type Right = usize;
     type Output = UBig;
@@ -69,13 +69,13 @@ impl BinaryOpBigOther for ShlUBig {
 impl_binary_operator!(
     Shl::shl(UBig, usize) -> UBig,
     ShlAssign::shl_assign,
-    BigOther<ShlUBig>
+    BigCopy<ShlUBig>
 );
 
 /// Left shift of an [`IBig`].
 enum ShlIBig {}
 
-impl BinaryOpBigOther for ShlIBig {
+impl BinaryOpRefValBigCopy for ShlIBig {
     type Left = IBig;
     type Right = usize;
     type Output = IBig;
@@ -135,13 +135,13 @@ impl BinaryOpBigOther for ShlIBig {
 impl_binary_operator!(
     Shl::shl(IBig, usize) -> IBig,
     ShlAssign::shl_assign,
-    BigOther<ShlIBig>
+    BigCopy<ShlIBig>
 );
 
 /// Right shift of a [`UBig`].
 enum ShrUBig {}
 
-impl BinaryOpBigOther for ShrUBig {
+impl BinaryOpRefValBigCopy for ShrUBig {
     type Left = UBig;
     type Right = usize;
     type Output = UBig;
@@ -179,13 +179,13 @@ impl BinaryOpBigOther for ShrUBig {
 impl_binary_operator!(
     Shr::shr(UBig, usize) -> UBig,
     ShrAssign::shr_assign,
-    BigOther<ShrUBig>
+    BigCopy<ShrUBig>
 );
 
 /// Right shift of an [`IBig`].
 enum ShrIBig {}
 
-impl BinaryOpBigOther for ShrIBig {
+impl BinaryOpRefValBigCopy for ShrIBig {
     type Left = IBig;
     type Right = usize;
     type Output = IBig;
@@ -221,7 +221,7 @@ impl BinaryOpBigOther for ShrIBig {
 impl_binary_operator!(
     Shr::shr(IBig, usize) -> IBig,
     ShrAssign::shr_assign,
-    BigOther<ShrIBig>
+    BigCopy<ShrIBig>
 );
 
 impl IBig {

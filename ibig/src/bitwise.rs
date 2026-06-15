@@ -1,7 +1,8 @@
 //! Bitwise operators for [`UBig`] and [`IBig`].
 
 use crate::ops::{
-    BigBig, CommutativeBinaryOpBig, UnaryOpRefValBig, impl_binary_operator, impl_unary_operator,
+    BigBig, CommutativeBinaryOpRefValBigBig, UnaryOpRefValBig, impl_binary_operator,
+    impl_unary_operator,
 };
 use crate::repr::{
     AsDigits,
@@ -79,7 +80,7 @@ impl_unary_operator!(Not::not(IBig) -> IBig, NotIBig);
 /// Bitwise AND operation for [`UBig`].
 enum BitAndUBigUBig {}
 
-impl CommutativeBinaryOpBig for BitAndUBigUBig {
+impl CommutativeBinaryOpRefValBigBig for BitAndUBigUBig {
     type Operand = UBig;
     type Output = UBig;
 
@@ -128,7 +129,7 @@ impl_binary_operator!(
 /// Bitwise AND operation for [`IBig`].
 enum BitAndIBigIBig {}
 
-impl CommutativeBinaryOpBig for BitAndIBigIBig {
+impl CommutativeBinaryOpRefValBigBig for BitAndIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
@@ -216,7 +217,7 @@ impl_binary_operator!(
 /// Bitwise OR operation for [`UBig`].
 enum BitOrUBigUBig {}
 
-impl CommutativeBinaryOpBig for BitOrUBigUBig {
+impl CommutativeBinaryOpRefValBigBig for BitOrUBigUBig {
     type Operand = UBig;
     type Output = UBig;
 
@@ -274,7 +275,7 @@ impl_binary_operator!(
 /// Bitwise OR operation for [`IBig`].
 enum BitOrIBigIBig {}
 
-impl CommutativeBinaryOpBig for BitOrIBigIBig {
+impl CommutativeBinaryOpRefValBigBig for BitOrIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
@@ -363,7 +364,7 @@ impl_binary_operator!(
 /// Bitwise XOR operation for [`UBig`].
 enum BitXorUBigUBig {}
 
-impl CommutativeBinaryOpBig for BitXorUBigUBig {
+impl CommutativeBinaryOpRefValBigBig for BitXorUBigUBig {
     type Operand = UBig;
     type Output = UBig;
 
@@ -421,7 +422,7 @@ impl_binary_operator!(
 /// Bitwise XOR operation for [`IBig`].
 enum BitXorIBigIBig {}
 
-impl CommutativeBinaryOpBig for BitXorIBigIBig {
+impl CommutativeBinaryOpRefValBigBig for BitXorIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 

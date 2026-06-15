@@ -1,6 +1,6 @@
 //! Addition.
 
-use crate::ops::{BigBig, CommutativeBinaryOpBig, impl_binary_operator};
+use crate::ops::{BigBig, CommutativeBinaryOpRefValBigBig, impl_binary_operator};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -198,7 +198,7 @@ impl IBig {
 /// Addition operation for [`UBig`].
 enum AddUBigUBig {}
 
-impl CommutativeBinaryOpBig for AddUBigUBig {
+impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
     type Operand = UBig;
     type Output = UBig;
 
@@ -268,7 +268,7 @@ impl_binary_operator!(
 /// Addition operation for [`IBig`].
 enum AddIBigIBig {}
 
-impl CommutativeBinaryOpBig for AddIBigIBig {
+impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
