@@ -12,7 +12,6 @@ use ibig_core::{Digit, SignedDigit};
 
 impl IBig {
     /// Returns `true` if the number is negative (less than zero).
-    #[inline]
     pub fn is_negative(&self) -> bool {
         match self.as_digits() {
             Small(digit) => digit.is_negative(),
@@ -21,7 +20,6 @@ impl IBig {
     }
 
     /// Returns `true` if the number is positive (greater than zero).
-    #[inline]
     pub fn is_positive(&self) -> bool {
         match self.as_digits() {
             Small(digit) => digit.is_positive(),
@@ -43,7 +41,6 @@ impl IBig {
     /// assert_eq!(IBig::ZERO.signum(), IBig::ZERO);
     /// assert_eq!(IBig::from(5i8).signum(), IBig::from(1i8));
     /// ```
-    #[inline]
     pub fn signum(&self) -> IBig {
         match self.as_digits() {
             Small(digit) => IBig::from_digit(digit.signum()),
@@ -52,7 +49,6 @@ impl IBig {
     }
 
     /// [`IBig::signum`] for a borrowed slice.
-    #[inline]
     fn signum_ref(digits: &[Digit]) -> IBig {
         // A multi-digit value is never zero.
         if ibig_core::is_negative(digits) {
@@ -67,7 +63,6 @@ impl IBig {
 struct NegOperation;
 
 impl UnaryOpDigits<IBig> for NegOperation {
-    #[inline]
     fn apply_digit(operand: SignedDigit) -> IBig {
         let (neg, overflow) = operand.overflowing_neg();
         if overflow {
@@ -78,7 +73,6 @@ impl UnaryOpDigits<IBig> for NegOperation {
         }
     }
 
-    #[inline]
     fn apply_ref(operand: &[Digit]) -> IBig {
         // Clone with room for a possible sign digit.
         let mut digits = Digits::with_capacity(operand.len() + 1);
@@ -86,7 +80,6 @@ impl UnaryOpDigits<IBig> for NegOperation {
         Self::apply_val(digits)
     }
 
-    #[inline]
     fn apply_val(mut operand: Digits) -> IBig {
         let scarry = ibig_core::neg(&mut operand);
         IBig::from_digits_scarry(operand, scarry)

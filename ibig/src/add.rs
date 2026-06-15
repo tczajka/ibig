@@ -21,7 +21,6 @@ impl UBig {
     /// assert_eq!(UBig::from(5u8).checked_add_signed(&IBig::from(-3)), Some(UBig::from(2u8)));
     /// assert_eq!(UBig::from(5u8).checked_add_signed(&IBig::from(-8)), None);
     /// ```
-    #[inline]
     pub fn checked_add_signed(&self, rhs: &IBig) -> Option<UBig> {
         match (self.as_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => UBig::checked_add_signed_digit_sdigit(a, b),
@@ -43,7 +42,6 @@ impl UBig {
     /// # use ibig::{IBig, UBig};
     /// assert_eq!(UBig::from(5u8).strict_add_signed(&IBig::from(-3)), UBig::from(2u8));
     /// ```
-    #[inline]
     pub fn strict_add_signed(&self, rhs: &IBig) -> UBig {
         self.checked_add_signed(rhs)
             .unwrap_or_else(|| UBig::panic_negative())
@@ -58,13 +56,11 @@ impl UBig {
     /// assert_eq!(UBig::from(5u8).saturating_add_signed(&IBig::from(-3)), UBig::from(2u8));
     /// assert_eq!(UBig::from(5u8).saturating_add_signed(&IBig::from(-8)), UBig::ZERO);
     /// ```
-    #[inline]
     pub fn saturating_add_signed(&self, rhs: &IBig) -> UBig {
         self.checked_add_signed(rhs).unwrap_or(UBig::ZERO)
     }
 
     /// `checked_add_signed` for a single unsigned digit `a` and a single signed digit `b`.
-    #[inline]
     fn checked_add_signed_digit_sdigit(a: Digit, b: SignedDigit) -> Option<UBig> {
         let (sum, overflow) = a.overflowing_add_signed(b);
         if !overflow {
@@ -126,7 +122,6 @@ impl UBig {
 
     /// Finishes a `checked_add_signed`: `scarry` is the most-significant digit of the result
     /// (the sum of an unsigned and a signed value), negative exactly when the result is.
-    #[inline]
     fn checked_add_signed_finish(mut digits: Digits, scarry: SignedDigit) -> Option<UBig> {
         if scarry.is_negative() {
             None
@@ -148,7 +143,6 @@ impl IBig {
     /// assert_eq!(IBig::from(5).add_unsigned(&UBig::from(3u8)), IBig::from(8));
     /// assert_eq!(IBig::from(-5).add_unsigned(&UBig::from(3u8)), IBig::from(-2));
     /// ```
-    #[inline]
     pub fn add_unsigned(&self, rhs: &UBig) -> IBig {
         match (self.as_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => IBig::add_unsigned_sdigit_digit(a, b),
@@ -159,7 +153,6 @@ impl IBig {
     }
 
     /// `add_unsigned` for a single signed digit `lhs` and a single unsigned digit `rhs`.
-    #[inline]
     fn add_unsigned_sdigit_digit(lhs: SignedDigit, rhs: Digit) -> IBig {
         let (sum, carry) = lhs.cast_unsigned().overflowing_add(rhs);
         IBig::from_two_digits(sum, SignedDigit::from(carry) + sign_extension_sdigit(lhs))
@@ -206,13 +199,11 @@ impl IBig {
 struct AddOperation;
 
 impl CommutativeBinaryOpDigits<UBig> for AddOperation {
-    #[inline]
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         let (sum, carry) = lhs.overflowing_add(rhs);
         UBig::from_two_digits(sum, carry.into())
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         // Clone with room for a possible carry digit.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
@@ -220,13 +211,11 @@ impl CommutativeBinaryOpDigits<UBig> for AddOperation {
         Self::apply_val_digit(digits, rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
         let carry = ibig_core::add_unsigned_digit(&mut lhs, rhs);
         UBig::from_digits_carry(lhs, carry)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         // Clone the longer operand, with room for a possible carry digit, and add
         // the shorter one to it.
@@ -257,7 +246,6 @@ impl CommutativeBinaryOpDigits<UBig> for AddOperation {
         UBig::from_digits_carry(lhs, carry)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from the longer operand.
         if lhs.len() >= rhs.len() {
@@ -277,7 +265,6 @@ impl_binary_operator!(
 );
 
 impl CommutativeBinaryOpDigits<IBig> for AddOperation {
-    #[inline]
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         let (sum, overflow) = lhs.overflowing_add(rhs);
         if overflow {
@@ -288,7 +275,6 @@ impl CommutativeBinaryOpDigits<IBig> for AddOperation {
         }
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
         // Clone with room for a possible sign digit.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
@@ -296,13 +282,11 @@ impl CommutativeBinaryOpDigits<IBig> for AddOperation {
         Self::apply_val_digit(digits, rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
         let scarry = ibig_core::add_signed_sdigit(&mut lhs, rhs);
         IBig::from_digits_scarry(lhs, scarry)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
         // Clone the longer operand, with room for a possible sign digit, and add the
         // shorter one to it.
@@ -329,7 +313,6 @@ impl CommutativeBinaryOpDigits<IBig> for AddOperation {
         IBig::from_digits_scarry(lhs, scarry)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {
         // Reuse storage from the longer operand.
         if lhs.len() >= rhs.len() {

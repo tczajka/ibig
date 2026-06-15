@@ -41,7 +41,6 @@ pub fn to_bytes_unsigned(digits: &[Digit], bytes: &mut [u8]) {
 /// to_bytes_signed(&[Digit::MAX], &mut bytes);
 /// assert!(bytes.iter().all(|&b| b == 0xff));
 /// ```
-#[inline]
 pub fn to_bytes_signed(digits: &[Digit], bytes: &mut [u8]) {
     let len = to_bytes_prefix(digits, bytes);
     extend_signed_bytes(bytes, len);

@@ -20,7 +20,6 @@ use crate::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
 /// assert_eq!(a, [Digit::ZERO, Digit::from(3u8)]);
 /// assert!(!carry);
 /// ```
-#[inline]
 pub fn add_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
     let (low, high) = lhs.split_at_mut(rhs.len());
     let carry = add_unsigned_unsigned_same_len(low, rhs);
@@ -70,7 +69,6 @@ pub fn add_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> bool 
 /// assert_eq!(a, [Digit::ZERO, Digit::from(8u8)]);
 /// assert!(!carry);
 /// ```
-#[inline]
 pub fn add_unsigned_digit(lhs: &mut [Digit], rhs: Digit) -> bool {
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (sum, carry) = low.overflowing_add(rhs);
@@ -117,7 +115,6 @@ pub fn add_unsigned_1(lhs: &mut [Digit]) -> bool {
 /// let mut a = [Digit::MAX];
 /// assert!(!add_unsigned_carry(&mut a, false));
 /// ```
-#[inline]
 pub fn add_unsigned_carry(lhs: &mut [Digit], carry: bool) -> bool {
     carry && add_unsigned_1(lhs)
 }
@@ -143,7 +140,6 @@ pub fn add_unsigned_carry(lhs: &mut [Digit], carry: bool) -> bool {
 /// assert_eq!(add_unsigned_scarry(&mut a, SignedDigit::from(1i8)), SignedDigit::from(1i8));
 /// assert_eq!(a, [Digit::ZERO]);
 /// ```
-#[inline]
 pub fn add_unsigned_scarry(lhs: &mut [Digit], carry: SignedDigit) -> SignedDigit {
     if carry == SignedDigit::from(-1i8) {
         -SignedDigit::from(sub_unsigned_1(lhs))
@@ -180,7 +176,6 @@ pub fn add_unsigned_scarry(lhs: &mut [Digit], carry: SignedDigit) -> SignedDigit
 /// assert_eq!(add_unsigned_signed(&mut a, &[Digit::MAX]), SignedDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-#[inline]
 pub fn add_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let rhs_extension = sign_extension(rhs);
     let (low, high) = lhs.split_at_mut(rhs.len());
@@ -211,7 +206,6 @@ pub fn add_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// assert_eq!(add_unsigned_sdigit(&mut a, SignedDigit::from(-1i8)), SignedDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-#[inline]
 pub fn add_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (sum, carry) = low.overflowing_add(rhs.cast_unsigned());
@@ -239,7 +233,6 @@ pub fn add_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
 /// assert_eq!(high, SignedDigit::from(-1i8));
 /// ```
-#[inline]
 pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     add_unsigned_signed(lhs, rhs) + lhs_extension
@@ -273,7 +266,6 @@ pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// assert_eq!(add_signed_unsigned(&mut a, &[Digit::MAX]), SignedDigit::from(1i8));
 /// assert_eq!(a, [(Digit::MAX >> 1) - Digit::from(1u8)]);
 /// ```
-#[inline]
 pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     SignedDigit::from(add_unsigned_unsigned(lhs, rhs)) + lhs_extension
@@ -298,7 +290,6 @@ pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// assert_eq!(add_signed_digit(&mut a, Digit::from(5u8)), SignedDigit::ZERO);
 /// assert_eq!(a, [Digit::from(4u8)]);
 /// ```
-#[inline]
 pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     SignedDigit::from(add_unsigned_digit(lhs, rhs)) + lhs_extension
@@ -321,7 +312,6 @@ pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> SignedDigit {
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
 /// assert_eq!(high, SignedDigit::from(-1i8));
 /// ```
-#[inline]
 pub fn add_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     add_unsigned_sdigit(lhs, rhs) + lhs_extension

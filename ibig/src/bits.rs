@@ -22,7 +22,6 @@ impl UBig {
     /// assert!(!UBig::from(0b10010u8).bit(3));
     /// assert!(!UBig::from(0b10010u8).bit(100));
     /// ```
-    #[inline]
     pub fn bit(&self, index: usize) -> bool {
         match self.as_digits() {
             Small(digit) => {
@@ -44,7 +43,6 @@ impl UBig {
     /// a.set_bit(2, false);
     /// assert_eq!(a, UBig::from(0b001u8));
     /// ```
-    #[inline]
     pub fn set_bit(&mut self, index: usize, value: bool) {
         let index = BitIndex::from(index);
         *self = match mem::take(self).into_digits() {
@@ -64,7 +62,6 @@ impl UBig {
     /// assert_eq!(UBig::from(1u8).bit_width(), 1);
     /// assert_eq!(UBig::from(0b101u8).bit_width(), 3);
     /// ```
-    #[inline]
     pub fn bit_width(&self) -> usize {
         match self.as_digits() {
             Small(digit) => DIGIT_BITS_USIZE - usize::try_from(digit.leading_zeros()).unwrap(),
@@ -90,7 +87,6 @@ impl UBig {
     /// assert_eq!(UBig::from(1u8).ilog2(), 0);
     /// assert_eq!(UBig::from(0b101u8).ilog2(), 2);
     /// ```
-    #[inline]
     pub fn ilog2(&self) -> usize {
         self.checked_ilog2()
             .expect("argument of ilog2 must be positive")
@@ -105,7 +101,6 @@ impl UBig {
     /// assert_eq!(UBig::from(0b101u8).checked_ilog2(), Some(2));
     /// assert_eq!(UBig::ZERO.checked_ilog2(), None);
     /// ```
-    #[inline]
     pub fn checked_ilog2(&self) -> Option<usize> {
         self.bit_width().checked_sub(1)
     }
@@ -123,7 +118,6 @@ impl UBig {
     /// assert_eq!(UBig::from(1u8).trailing_zeros(), 0);
     /// assert_eq!(UBig::from(0b101000u8).trailing_zeros(), 3);
     /// ```
-    #[inline]
     pub fn trailing_zeros(&self) -> usize {
         match self.as_digits() {
             Small(digit) => UBig::trailing_zeros_digit(digit),
@@ -140,7 +134,6 @@ impl UBig {
     /// assert_eq!(UBig::from(0u8).trailing_ones(), 0);
     /// assert_eq!(UBig::from(0b100111u8).trailing_ones(), 3);
     /// ```
-    #[inline]
     pub fn trailing_ones(&self) -> usize {
         match self.as_digits() {
             Small(digit) => digit.trailing_ones().try_into().unwrap(),
@@ -157,7 +150,6 @@ impl UBig {
     /// assert_eq!(UBig::ZERO.count_ones(), 0);
     /// assert_eq!(UBig::from(0b10110u8).count_ones(), 3);
     /// ```
-    #[inline]
     pub fn count_ones(&self) -> usize {
         match self.as_digits() {
             Small(digit) => digit.count_ones().try_into().unwrap(),
@@ -175,7 +167,6 @@ impl UBig {
     /// assert!(!UBig::from(6u8).is_power_of_two());
     /// assert!(!UBig::ZERO.is_power_of_two());
     /// ```
-    #[inline]
     pub fn is_power_of_two(&self) -> bool {
         match self.as_digits() {
             Small(digit) => digit.is_power_of_two(),
@@ -193,7 +184,6 @@ impl UBig {
     /// assert_eq!(UBig::from(8u8).next_power_of_two(), UBig::from(8u8));
     /// assert_eq!(UBig::ZERO.next_power_of_two(), UBig::from(1u8));
     /// ```
-    #[inline]
     pub fn next_power_of_two(&self) -> UBig {
         match self.as_digits() {
             Small(digit) => UBig::next_power_of_two_digit(digit),
@@ -202,7 +192,6 @@ impl UBig {
     }
 
     /// [`UBig::set_bit`] for a single digit.
-    #[inline]
     fn set_bit_digit(digit: Digit, index: BitIndex, value: bool) -> UBig {
         if index.digit_index() == 0 {
             let mask = Digit::from_u8(1) << index.bit_index();
@@ -231,7 +220,6 @@ impl UBig {
     }
 
     /// [`UBig::trailing_zeros`] for a single digit.
-    #[inline]
     fn trailing_zeros_digit(digit: Digit) -> usize {
         assert!(
             digit != Digit::ZERO,
@@ -241,7 +229,6 @@ impl UBig {
     }
 
     /// [`UBig::trailing_zeros`] for a borrowed slice.
-    #[inline]
     fn trailing_zeros_ref(digits: &[Digit]) -> usize {
         // A multi-digit value is nonzero, so it has a lowest set bit.
         let lowest = ibig_core::lowest_one(digits).unwrap();
@@ -250,7 +237,6 @@ impl UBig {
     }
 
     /// [`UBig::trailing_ones`] for a borrowed slice.
-    #[inline]
     fn trailing_ones_ref(digits: &[Digit]) -> usize {
         // This will not overflow because our numbers are never longer than `usize::MAX` bits.
         match ibig_core::lowest_zero(digits) {
@@ -260,7 +246,6 @@ impl UBig {
     }
 
     /// [`UBig::next_power_of_two`] for a single digit.
-    #[inline]
     fn next_power_of_two_digit(digit: Digit) -> UBig {
         match digit.checked_next_power_of_two() {
             Some(power) => UBig::from_digit(power),
@@ -269,7 +254,6 @@ impl UBig {
     }
 
     /// [`UBig::next_power_of_two`] for a borrowed slice.
-    #[inline]
     fn next_power_of_two_ref(digits: &[Digit]) -> UBig {
         // Clone with room for one more digit in case rounding up overflows.
         let mut new_digits = Digits::with_capacity(digits.len() + 1);
@@ -300,7 +284,6 @@ impl IBig {
     /// // A non-negative value reads as zero above its bits.
     /// assert!(!IBig::from(2i8).bit(100));
     /// ```
-    #[inline]
     pub fn bit(&self, index: usize) -> bool {
         match self.as_digits() {
             Small(digit) => IBig::bit_digit(digit, index),
@@ -322,7 +305,6 @@ impl IBig {
     /// b.set_bit(0, false);
     /// assert_eq!(b, IBig::from(-2i8));
     /// ```
-    #[inline]
     pub fn set_bit(&mut self, index: usize, value: bool) {
         *self = match mem::take(self).into_digits() {
             Small(digit) => IBig::set_bit_digit(digit, index, value),
@@ -343,7 +325,6 @@ impl IBig {
     /// assert_eq!(IBig::from(1i8).ilog2(), 0);
     /// assert_eq!(IBig::from(0b101i8).ilog2(), 2);
     /// ```
-    #[inline]
     pub fn ilog2(&self) -> usize {
         self.checked_ilog2()
             .expect("argument of ilog2 must be positive")
@@ -359,7 +340,6 @@ impl IBig {
     /// assert_eq!(IBig::ZERO.checked_ilog2(), None);
     /// assert_eq!(IBig::from(-4i8).checked_ilog2(), None);
     /// ```
-    #[inline]
     pub fn checked_ilog2(&self) -> Option<usize> {
         match self.as_digits() {
             Small(digit) => digit.checked_ilog2().map(|x| x.try_into().unwrap()),
@@ -381,7 +361,6 @@ impl IBig {
     /// // -4 is ...11111100, with 2 trailing zeros.
     /// assert_eq!(IBig::from(-4i8).trailing_zeros(), 2);
     /// ```
-    #[inline]
     pub fn trailing_zeros(&self) -> usize {
         match self.as_digits() {
             Small(digit) => IBig::trailing_zeros_digit(digit),
@@ -403,7 +382,6 @@ impl IBig {
     /// // -3 is ...11111101, with 1 trailing one.
     /// assert_eq!(IBig::from(-3i8).trailing_ones(), 1);
     /// ```
-    #[inline]
     pub fn trailing_ones(&self) -> usize {
         match self.as_digits() {
             Small(digit) => IBig::trailing_ones_digit(digit),
@@ -412,7 +390,6 @@ impl IBig {
     }
 
     /// [`IBig::bit`] for a single digit.
-    #[inline]
     fn bit_digit(digit: SignedDigit, index: usize) -> bool {
         if index < DIGIT_BITS_USIZE {
             (digit >> index) & SignedDigit::from_i8(1) != SignedDigit::ZERO
@@ -423,7 +400,6 @@ impl IBig {
     }
 
     /// [`IBig::set_bit`] for a single digit.
-    #[inline]
     fn set_bit_digit(digit: SignedDigit, index: usize, value: bool) -> IBig {
         if index < DIGIT_BITS_USIZE - 1 {
             let mask = SignedDigit::from_i8(1) << index;
@@ -463,7 +439,6 @@ impl IBig {
     }
 
     /// [`IBig::checked_ilog2`] for a borrowed slice.
-    #[inline]
     fn checked_ilog2_ref(digits: &[Digit]) -> Option<usize> {
         if ibig_core::is_negative(digits) {
             None
@@ -476,7 +451,6 @@ impl IBig {
     }
 
     /// [`IBig::trailing_zeros`] for a single digit.
-    #[inline]
     fn trailing_zeros_digit(digit: SignedDigit) -> usize {
         assert!(
             digit != SignedDigit::ZERO,
@@ -486,7 +460,6 @@ impl IBig {
     }
 
     /// [`IBig::trailing_zeros`] for a borrowed slice.
-    #[inline]
     fn trailing_zeros_ref(digits: &[Digit]) -> usize {
         // A multi-digit value is nonzero, so it has a lowest set bit.
         let lowest = ibig_core::lowest_one(digits).unwrap();
@@ -495,7 +468,6 @@ impl IBig {
     }
 
     /// [`IBig::trailing_ones`] for a single digit.
-    #[inline]
     fn trailing_ones_digit(digit: SignedDigit) -> usize {
         assert!(
             digit != SignedDigit::from_i8(-1),
@@ -505,7 +477,6 @@ impl IBig {
     }
 
     /// [`IBig::trailing_ones`] for a borrowed slice.
-    #[inline]
     fn trailing_ones_ref(digits: &[Digit]) -> usize {
         // A multi-digit two's complement value is never all ones, so it has a lowest zero.
         let lowest = ibig_core::lowest_zero(digits).unwrap();

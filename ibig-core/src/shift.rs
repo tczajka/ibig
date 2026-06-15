@@ -59,7 +59,6 @@ pub fn shl_small_unsigned(digits: &mut [Digit], shift: u32) -> Digit {
 /// // The top bit shifts into the high digit.
 /// assert_eq!(shl_small_digit(Digit::MAX, 1), (!Digit::from(1u8), Digit::from(1u8)));
 /// ```
-#[inline]
 pub fn shl_small_digit(digit: Digit, shift: u32) -> (Digit, Digit) {
     assert!(shift < Digit::BITS);
     if shift == 0 {
@@ -123,7 +122,6 @@ pub fn shr_small_unsigned(digits: &mut [Digit], shift: u32) {
 /// assert_eq!(a, [!Digit::from(1u8)]); // -2
 /// assert_eq!(overflow, SignedDigit::from(-1i8)); // sign extension of -1
 /// ```
-#[inline]
 pub fn shl_small_signed(digits: &mut [Digit], shift: u32) -> SignedDigit {
     let (top, low) = digits.split_last_mut().expect("digits is empty");
     // Shift the lower digits as unsigned and the top digit as signed, stitching the carry
@@ -155,7 +153,6 @@ pub fn shl_small_signed(digits: &mut [Digit], shift: u32) -> SignedDigit {
 ///     (!Digit::from(1u8), SignedDigit::from(-1i8))
 /// );
 /// ```
-#[inline]
 pub fn shl_small_sdigit(digit: SignedDigit, shift: u32) -> (Digit, SignedDigit) {
     assert!(shift < Digit::BITS);
     if shift == 0 {

@@ -15,7 +15,6 @@ impl IBig {
 
 /// The default value is zero.
 impl Default for UBig {
-    #[inline]
     fn default() -> UBig {
         UBig::ZERO
     }
@@ -23,7 +22,6 @@ impl Default for UBig {
 
 /// The default value is zero.
 impl Default for IBig {
-    #[inline]
     fn default() -> IBig {
         IBig::ZERO
     }

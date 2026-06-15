@@ -18,7 +18,6 @@ use crate::{Digit, SignedDigit, not};
 /// assert!(!is_negative(&[Digit::from(5u8)])); // +5
 /// assert!(!is_negative(&[Digit::MAX, Digit::ZERO])); // a positive multi-digit value
 /// ```
-#[inline]
 pub const fn is_negative(digits: &[Digit]) -> bool {
     digits.last().unwrap().cast_signed().is_negative()
 }
@@ -43,7 +42,6 @@ pub const fn is_negative(digits: &[Digit]) -> bool {
 /// assert_eq!(a, [Digit::from(1u8)]);
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
-#[inline]
 pub fn neg(digits: &mut [Digit]) -> SignedDigit {
     // -x == !x + 1.
     not(digits);
@@ -129,7 +127,6 @@ pub fn extend_signed_bytes(bytes: &mut [u8], len: usize) {
 /// // The sign comes from the most-significant digit.
 /// assert_eq!(sign_extension(&[Digit::from(5u8), Digit::MAX]), SignedDigit::from(-1i8));
 /// ```
-#[inline]
 pub const fn sign_extension(digits: &[Digit]) -> SignedDigit {
     let last = digits.last().expect("signed digits are empty");
     sign_extension_sdigit(last.cast_signed())
@@ -145,7 +142,6 @@ pub const fn sign_extension(digits: &[Digit]) -> SignedDigit {
 /// assert_eq!(sign_extension_sdigit(SignedDigit::from(-2i8)), SignedDigit::from(-1i8));
 /// assert_eq!(sign_extension_sdigit(SignedDigit::from(5i8)), SignedDigit::ZERO);
 /// ```
-#[inline]
 pub const fn sign_extension_sdigit(high: SignedDigit) -> SignedDigit {
     // Smear the sign bit across the whole digit: arithmetic-shifting it down to every bit
     // yields all-ones for a negative `high` and all-zeros otherwise.
@@ -162,7 +158,6 @@ pub const fn sign_extension_sdigit(high: SignedDigit) -> SignedDigit {
 /// assert_eq!(sign_extension_byte(-2), -1);
 /// assert_eq!(sign_extension_byte(5), 0);
 /// ```
-#[inline]
 pub const fn sign_extension_byte(high: i8) -> i8 {
     high >> (i8::BITS - 1)
 }

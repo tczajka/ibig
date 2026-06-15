@@ -37,7 +37,6 @@ impl BitIndex {
     /// assert_eq!(index.digit_index(), 1);
     /// assert_eq!(index.bit_index(), 3);
     /// ```
-    #[inline]
     pub fn new(digit_index: usize, bit_index: u32) -> BitIndex {
         assert!(bit_index < Digit::BITS, "bit index out of range");
         BitIndex {
@@ -47,20 +46,17 @@ impl BitIndex {
     }
 
     /// The index of the [`Digit`] that holds the bit.
-    #[inline]
     pub fn digit_index(self) -> usize {
         self.digit_index
     }
 
     /// The index of the bit within its [`Digit`], in the range `0..Digit::BITS`.
-    #[inline]
     pub fn bit_index(self) -> u32 {
         self.bit_index
     }
 }
 
 impl From<usize> for BitIndex {
-    #[inline]
     fn from(index: usize) -> BitIndex {
         BitIndex {
             digit_index: index / DIGIT_BITS_USIZE,
@@ -85,7 +81,6 @@ impl core::error::Error for BitIndexOutOfRange {}
 impl TryFrom<BitIndex> for usize {
     type Error = BitIndexOutOfRange;
 
-    #[inline]
     fn try_from(index: BitIndex) -> Result<usize, BitIndexOutOfRange> {
         const {
             assert!(Digit::BITS.is_power_of_two());
@@ -113,7 +108,6 @@ impl TryFrom<BitIndex> for usize {
 /// // The low bit of the second digit.
 /// assert!(bit_unsigned(&[Digit::ZERO, Digit::from(1u8)], BitIndex::new(1, 0)));
 /// ```
-#[inline]
 pub fn bit_unsigned(digits: &[Digit], index: BitIndex) -> bool {
     index.digit_index() < digits.len() && digit_bit(digits[index.digit_index()], index.bit_index())
 }
@@ -137,7 +131,6 @@ pub fn bit_unsigned(digits: &[Digit], index: BitIndex) -> bool {
 /// assert!(bit_signed(&[Digit::from(0b101u8)], BitIndex::from(0)));
 /// assert!(!bit_signed(&[Digit::from(0b101u8)], BitIndex::from(100)));
 /// ```
-#[inline]
 pub fn bit_signed(digits: &[Digit], index: BitIndex) -> bool {
     if index.digit_index() < digits.len() {
         digit_bit(digits[index.digit_index()], index.bit_index())
@@ -162,7 +155,6 @@ pub fn bit_signed(digits: &[Digit], index: BitIndex) -> bool {
 /// set_bit(&mut digits, BitIndex::from(2), false);
 /// assert_eq!(digits, [Digit::from(0b001u8)]);
 /// ```
-#[inline]
 pub fn set_bit(digits: &mut [Digit], index: BitIndex, value: bool) {
     let mask = Digit::from_u8(1) << index.bit_index();
     if value {
@@ -184,7 +176,6 @@ pub fn set_bit(digits: &mut [Digit], index: BitIndex, value: bool) {
 /// assert_eq!(highest_one(&[Digit::from(5u8), Digit::ZERO]), Some(BitIndex::new(0, 2)));
 /// assert_eq!(highest_one(&[Digit::ZERO, Digit::from(1u8)]), Some(BitIndex::new(1, 0)));
 /// ```
-#[inline]
 pub fn highest_one(digits: &[Digit]) -> Option<BitIndex> {
     let len = min_len_unsigned(digits);
     if len == 0 {
@@ -265,7 +256,6 @@ pub fn count_ones(digits: &[Digit]) -> usize {
 /// assert!(is_power_of_two(&[Digit::ZERO, Digit::from(4u8)]));
 /// assert!(!is_power_of_two(&[Digit::from(1u8), Digit::from(1u8)]));
 /// ```
-#[inline]
 pub fn is_power_of_two(digits: &[Digit]) -> bool {
     let len = min_len_unsigned(digits);
     let Some((top, low)) = digits[..len].split_last() else {
@@ -334,7 +324,6 @@ pub fn next_power_of_two(digits: &mut [Digit]) -> bool {
 }
 
 /// Returns the bit at `bit_index` (which must be less than `Digit::BITS`) of a single digit.
-#[inline]
 fn digit_bit(digit: Digit, bit_index: u32) -> bool {
     (digit >> bit_index) & Digit::from_u8(1) != Digit::ZERO
 }

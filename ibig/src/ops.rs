@@ -35,7 +35,6 @@ pub(crate) trait UnaryOpDigits<T: AsDigits> {
 
 /// Every [`UnaryOpDigits`] induces a [`UnaryOp`].
 impl<T: AsDigits, Op: UnaryOpDigits<T>> UnaryOp<T> for Op {
-    #[inline]
     fn apply_ref(value: &T) -> T {
         match value.as_digits() {
             Small(d) => <Op as UnaryOpDigits<T>>::apply_digit(d),
@@ -43,7 +42,6 @@ impl<T: AsDigits, Op: UnaryOpDigits<T>> UnaryOp<T> for Op {
         }
     }
 
-    #[inline]
     fn apply_val(value: T) -> T {
         match value.into_digits() {
             Small(d) => <Op as UnaryOpDigits<T>>::apply_digit(d),
@@ -61,7 +59,6 @@ macro_rules! impl_unary_operator {
         impl $trait for $t {
             type Output = $t;
 
-            #[inline]
             fn $method(self) -> $t {
                 <$op as $crate::ops::UnaryOp<$t>>::apply_val(self)
             }
@@ -70,7 +67,6 @@ macro_rules! impl_unary_operator {
         impl $trait for &$t {
             type Output = $t;
 
-            #[inline]
             fn $method(self) -> $t {
                 <$op as $crate::ops::UnaryOp<$t>>::apply_ref(self)
             }
@@ -180,7 +176,6 @@ pub(crate) struct PrimitiveRhs<Op>(Op);
 
 /// Every [`BinaryOpDigits`] induces a [`BinaryOp`] over a single type.
 impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
-    #[inline]
     fn apply_ref_ref(lhs: &T, rhs: &T) -> T {
         match (lhs.as_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
@@ -190,7 +185,6 @@ impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
         }
     }
 
-    #[inline]
     fn apply_ref_val(lhs: &T, rhs: T) -> T {
         match (lhs.as_digits(), rhs.into_digits()) {
             (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
@@ -200,7 +194,6 @@ impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
         }
     }
 
-    #[inline]
     fn apply_val_ref(lhs: T, rhs: &T) -> T {
         match (lhs.into_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
@@ -210,7 +203,6 @@ impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
         }
     }
 
-    #[inline]
     fn apply_val_val(lhs: T, rhs: T) -> T {
         match (lhs.into_digits(), rhs.into_digits()) {
             (Small(a), Small(b)) => <Op as BinaryOpDigits<T>>::apply_digit_digit(a, b),
@@ -223,12 +215,10 @@ impl<T: AsDigits, Op: BinaryOpDigits<T>> BinaryOp<T, T> for DigitsRhs<Op> {
 
 /// Every [`BinaryOpDigitsPrimitive`] induces a [`BinaryOp`] with a primitive right operand.
 impl<L: AsDigits, R: Copy, Op: BinaryOpDigitsPrimitive<L, R>> BinaryOp<L, R> for PrimitiveRhs<Op> {
-    #[inline]
     fn apply_ref_ref(lhs: &L, rhs: &R) -> L {
         Self::apply_ref_val(lhs, *rhs)
     }
 
-    #[inline]
     fn apply_ref_val(lhs: &L, rhs: R) -> L {
         match lhs.as_digits() {
             Small(digit) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_digit(digit, rhs),
@@ -236,12 +226,10 @@ impl<L: AsDigits, R: Copy, Op: BinaryOpDigitsPrimitive<L, R>> BinaryOp<L, R> for
         }
     }
 
-    #[inline]
     fn apply_val_ref(lhs: L, rhs: &R) -> L {
         Self::apply_val_val(lhs, *rhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: L, rhs: R) -> L {
         match lhs.into_digits() {
             Small(digit) => <Op as BinaryOpDigitsPrimitive<L, R>>::apply_digit(digit, rhs),
@@ -252,47 +240,38 @@ impl<L: AsDigits, R: Copy, Op: BinaryOpDigitsPrimitive<L, R>> BinaryOp<L, R> for
 
 /// Every [`CommutativeBinaryOpDigits`] is a [`BinaryOpDigits`].
 impl<T: AsDigits, Op: CommutativeBinaryOpDigits<T>> BinaryOpDigits<T> for Op {
-    #[inline]
     fn apply_digit_digit(lhs: T::SingleDigit, rhs: T::SingleDigit) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_digit_digit(lhs, rhs)
     }
 
-    #[inline]
     fn apply_digit_ref(lhs: T::SingleDigit, rhs: &[Digit]) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_ref_digit(rhs, lhs)
     }
 
-    #[inline]
     fn apply_digit_val(lhs: T::SingleDigit, rhs: Digits) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_val_digit(rhs, lhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: T::SingleDigit) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_ref_digit(lhs, rhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_ref_ref(lhs, rhs)
     }
 
-    #[inline]
     fn apply_ref_val(lhs: &[Digit], rhs: Digits) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_val_ref(rhs, lhs)
     }
 
-    #[inline]
     fn apply_val_digit(lhs: Digits, rhs: T::SingleDigit) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_val_digit(lhs, rhs)
     }
 
-    #[inline]
     fn apply_val_ref(lhs: Digits, rhs: &[Digit]) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_val_ref(lhs, rhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> T {
         <Op as CommutativeBinaryOpDigits<T>>::apply_val_val(lhs, rhs)
     }
@@ -309,7 +288,6 @@ macro_rules! impl_binary_operator {
         impl $trait<$right> for $left {
             type Output = $left;
 
-            #[inline]
             fn $method(self, rhs: $right) -> $left {
                 <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_val(self, rhs)
             }
@@ -318,7 +296,6 @@ macro_rules! impl_binary_operator {
         impl $trait<&$right> for $left {
             type Output = $left;
 
-            #[inline]
             fn $method(self, rhs: &$right) -> $left {
                 <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_ref(self, rhs)
             }
@@ -327,7 +304,6 @@ macro_rules! impl_binary_operator {
         impl $trait<$right> for &$left {
             type Output = $left;
 
-            #[inline]
             fn $method(self, rhs: $right) -> $left {
                 <$op as $crate::ops::BinaryOp<$left, $right>>::apply_ref_val(self, rhs)
             }
@@ -336,14 +312,12 @@ macro_rules! impl_binary_operator {
         impl $trait<&$right> for &$left {
             type Output = $left;
 
-            #[inline]
             fn $method(self, rhs: &$right) -> $left {
                 <$op as $crate::ops::BinaryOp<$left, $right>>::apply_ref_ref(self, rhs)
             }
         }
 
         impl $assign_trait<$right> for $left {
-            #[inline]
             fn $assign_method(&mut self, rhs: $right) {
                 *self = <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_val(
                     ::core::mem::take(self),
@@ -353,7 +327,6 @@ macro_rules! impl_binary_operator {
         }
 
         impl $assign_trait<&$right> for $left {
-            #[inline]
             fn $assign_method(&mut self, rhs: &$right) {
                 *self = <$op as $crate::ops::BinaryOp<$left, $right>>::apply_val_ref(
                     ::core::mem::take(self),

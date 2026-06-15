@@ -15,7 +15,6 @@ macro_rules! try_from_big_value {
         impl TryFrom<$from> for $to {
             type Error = TryFromBigError;
 
-            #[inline]
             fn try_from(value: $from) -> Result<Self, TryFromBigError> {
                 Self::try_from(&value)
             }
@@ -27,7 +26,6 @@ impl UBig {
     /// Constructs from a `u8` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_u8(value: u8) -> UBig {
         UBig::const_from_digit(Digit::from_u8(value))
     }
@@ -35,7 +33,6 @@ impl UBig {
     /// Constructs from a `u16` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_u16(value: u16) -> UBig {
         UBig::const_from_digit(Digit::from_u16(value))
     }
@@ -43,7 +40,6 @@ impl UBig {
     /// Constructs from a `u32` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_u32(value: u32) -> UBig {
         match Digit::try_from_u32(value) {
             Some(digit) => UBig::const_from_digit(digit),
@@ -54,7 +50,6 @@ impl UBig {
     /// Constructs from a `u64` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_u64(value: u64) -> UBig {
         match Digit::try_from_u64(value) {
             Some(digit) => UBig::const_from_digit(digit),
@@ -68,7 +63,6 @@ impl UBig {
 macro_rules! ubig_from_unsigned {
     ($t:ty) => {
         impl From<$t> for UBig {
-            #[inline]
             fn from(value: $t) -> UBig {
                 match Digit::try_from(value) {
                     Ok(digit) => UBig::from_digit(digit),
@@ -94,7 +88,6 @@ macro_rules! ubig_try_from_signed {
         impl TryFrom<$signed> for UBig {
             type Error = TryFromIntError;
 
-            #[inline]
             fn try_from(value: $signed) -> Result<UBig, TryFromIntError> {
                 <$unsigned>::try_from(value).map(UBig::from)
             }
@@ -111,7 +104,6 @@ ubig_try_from_signed!(isize => usize);
 
 /// Converts a `bool`: `false` to zero and `true` to one.
 impl From<bool> for UBig {
-    #[inline]
     fn from(value: bool) -> UBig {
         UBig::from_digit(Digit::from(value))
     }
@@ -119,7 +111,6 @@ impl From<bool> for UBig {
 
 /// Converts a `char` to its Unicode scalar value (code point).
 impl From<char> for UBig {
-    #[inline]
     fn from(value: char) -> UBig {
         UBig::from(u32::from(value))
     }
@@ -191,7 +182,6 @@ macro_rules! try_from_ubig_signed {
         impl TryFrom<&UBig> for $signed {
             type Error = TryFromBigError;
 
-            #[inline]
             fn try_from(value: &UBig) -> Result<$signed, TryFromBigError> {
                 // Fast path.
                 if let Small(digit) = value.as_digits() {
@@ -218,7 +208,6 @@ try_from_ubig_signed!(isize => usize);
 impl TryFrom<&UBig> for bool {
     type Error = TryFromBigError;
 
-    #[inline]
     fn try_from(value: &UBig) -> Result<bool, TryFromBigError> {
         match value.as_digits() {
             Small(digit) => digit.try_into().map_err(|_| TryFromBigError),
@@ -233,7 +222,6 @@ impl IBig {
     /// Constructs from an `i8` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_i8(value: i8) -> IBig {
         IBig::const_from_digit(SignedDigit::from_i8(value))
     }
@@ -241,7 +229,6 @@ impl IBig {
     /// Constructs from an `i16` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_i16(value: i16) -> IBig {
         IBig::const_from_digit(SignedDigit::from_i16(value))
     }
@@ -249,7 +236,6 @@ impl IBig {
     /// Constructs from an `i32` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_i32(value: i32) -> IBig {
         match SignedDigit::try_from_i32(value) {
             Some(digit) => IBig::const_from_digit(digit),
@@ -260,7 +246,6 @@ impl IBig {
     /// Constructs from an `i64` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
-    #[inline]
     pub const fn const_from_i64(value: i64) -> IBig {
         match SignedDigit::try_from_i64(value) {
             Some(digit) => IBig::const_from_digit(digit),
@@ -274,7 +259,6 @@ impl IBig {
 macro_rules! ibig_from_signed {
     ($t:ty) => {
         impl From<$t> for IBig {
-            #[inline]
             fn from(value: $t) -> IBig {
                 match SignedDigit::try_from(value) {
                     Ok(digit) => IBig::from_digit(digit),
@@ -296,7 +280,6 @@ ibig_from_signed!(isize);
 macro_rules! ibig_from_unsigned {
     ($t:ty) => {
         impl From<$t> for IBig {
-            #[inline]
             fn from(value: $t) -> IBig {
                 IBig::from(UBig::from(value))
             }
@@ -313,7 +296,6 @@ ibig_from_unsigned!(usize);
 
 /// Converts a `bool`: `false` to zero and `true` to one.
 impl From<bool> for IBig {
-    #[inline]
     fn from(value: bool) -> IBig {
         IBig::from_digit(SignedDigit::from(value))
     }
@@ -449,7 +431,6 @@ unsigned_from_ibig!(usize);
 impl TryFrom<&IBig> for bool {
     type Error = TryFromBigError;
 
-    #[inline]
     fn try_from(value: &IBig) -> Result<bool, TryFromBigError> {
         match value.as_digits() {
             Small(digit) => digit.try_into().map_err(|_| TryFromBigError),
@@ -463,7 +444,6 @@ try_from_big_value!(bool, IBig);
 impl TryFrom<IBig> for UBig {
     type Error = TryFromBigError;
 
-    #[inline]
     fn try_from(value: IBig) -> Result<UBig, TryFromBigError> {
         if value.is_negative() {
             return Err(TryFromBigError);
@@ -479,7 +459,6 @@ impl TryFrom<IBig> for UBig {
 impl TryFrom<&IBig> for UBig {
     type Error = TryFromBigError;
 
-    #[inline]
     fn try_from(value: &IBig) -> Result<UBig, TryFromBigError> {
         // Fast path to avoid cloning.
         if value.is_negative() {
@@ -490,7 +469,6 @@ impl TryFrom<&IBig> for UBig {
 }
 
 impl From<UBig> for IBig {
-    #[inline]
     fn from(value: UBig) -> IBig {
         match value.into_digits() {
             // A zero high digit keeps the value non-negative.
@@ -501,7 +479,6 @@ impl From<UBig> for IBig {
 }
 
 impl From<&UBig> for IBig {
-    #[inline]
     fn from(value: &UBig) -> IBig {
         match value.as_digits() {
             Small(digit) => IBig::from_two_digits(digit, SignedDigit::ZERO),
@@ -512,7 +489,6 @@ impl From<&UBig> for IBig {
 
 impl IBig {
     /// [`From<UBig>`] for an owned buffer of unsigned digits.
-    #[inline]
     fn from_ubig_val(mut digits: Digits) -> IBig {
         // The unsigned digits are non-negative. If the most-significant digit's sign bit
         // is set, the two's complement reading would be negative, so append a zero digit.
@@ -523,7 +499,6 @@ impl IBig {
     }
 
     /// [`From<&UBig>`] for a borrowed slice of unsigned digits.
-    #[inline]
     fn from_ubig_ref(digits: &[Digit]) -> IBig {
         // If the top digit's sign bit is set, a zero digit is appended to keep the
         // two's complement reading positive; clone with room for it.

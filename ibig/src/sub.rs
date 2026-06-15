@@ -20,7 +20,6 @@ impl UBig {
     /// assert_eq!(UBig::from(5u8).checked_sub(&UBig::from(3u8)), Some(UBig::from(2u8)));
     /// assert_eq!(UBig::from(3u8).checked_sub(&UBig::from(5u8)), None);
     /// ```
-    #[inline]
     pub fn checked_sub(&self, rhs: &UBig) -> Option<UBig> {
         match (self.as_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => a.checked_sub(b).map(UBig::from_digit),
@@ -41,13 +40,11 @@ impl UBig {
     /// assert_eq!(UBig::from(5u8).saturating_sub(&UBig::from(3u8)), UBig::from(2u8));
     /// assert_eq!(UBig::from(3u8).saturating_sub(&UBig::from(5u8)), UBig::ZERO);
     /// ```
-    #[inline]
     pub fn saturating_sub(&self, rhs: &UBig) -> UBig {
         self.checked_sub(rhs).unwrap_or(UBig::ZERO)
     }
 
     /// Checked subtraction of multi-digit values.
-    #[inline]
     fn checked_sub_large(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
         // A shorter `lhs` is necessarily smaller, and `ibig_core::sub_unsigned_unsigned` requires
         // `rhs` to not be longer than `lhs`.
@@ -66,7 +63,6 @@ impl UBig {
 struct SubOperation;
 
 impl BinaryOpDigits<UBig> for SubOperation {
-    #[inline]
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         let (diff, borrow) = lhs.overflowing_sub(rhs);
         if borrow {
@@ -85,12 +81,10 @@ impl BinaryOpDigits<UBig> for SubOperation {
         UBig::panic_negative()
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         Self::apply_val_digit(Digits::from_slice(lhs), rhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         // Check the lengths before cloning a result that would only be discarded.
         if lhs.len() < rhs.len() {
@@ -114,7 +108,6 @@ impl BinaryOpDigits<UBig> for SubOperation {
         UBig::from_digits(rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
         // `lhs` has at least two digits, so subtracting a single digit cannot underflow.
         let borrow = ibig_core::sub_unsigned_digit(&mut lhs, rhs);
@@ -122,7 +115,6 @@ impl BinaryOpDigits<UBig> for SubOperation {
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
         if lhs.len() < rhs.len() || ibig_core::sub_unsigned_unsigned(&mut lhs, rhs) {
             UBig::panic_negative();
@@ -130,7 +122,6 @@ impl BinaryOpDigits<UBig> for SubOperation {
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from `lhs`; the result is never longer than `lhs`.
         Self::apply_val_ref(lhs, &rhs)
@@ -146,7 +137,6 @@ impl_binary_operator!(
 );
 
 impl BinaryOpDigits<IBig> for SubOperation {
-    #[inline]
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         let (diff, overflow) = lhs.overflowing_sub(rhs);
         if overflow {
@@ -157,7 +147,6 @@ impl BinaryOpDigits<IBig> for SubOperation {
         }
     }
 
-    #[inline]
     fn apply_digit_ref(lhs: SignedDigit, rhs: &[Digit]) -> IBig {
         // `rhs` is longer than the single digit `lhs`; sign-extend `lhs` to match in `apply_val_ref`.
         let mut digits = Digits::with_capacity(rhs.len() + 1);
@@ -165,14 +154,12 @@ impl BinaryOpDigits<IBig> for SubOperation {
         Self::apply_val_ref(digits, rhs)
     }
 
-    #[inline]
     fn apply_digit_val(lhs: SignedDigit, mut rhs: Digits) -> IBig {
         // Reuse `rhs`'s storage: `rhs = lhs - rhs`.
         let scarry = ibig_core::sub_reverse_signed_sdigit(&mut rhs, lhs);
         IBig::from_digits_scarry(rhs, scarry)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
         // Clone `lhs` with room for a possible sign digit.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
@@ -180,7 +167,6 @@ impl BinaryOpDigits<IBig> for SubOperation {
         Self::apply_val_digit(digits, rhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
         // Clone `lhs`, with room for sign-extension up to `rhs`'s length and a possible sign digit.
         let mut digits = Digits::with_capacity(lhs.len().max(rhs.len()) + 1);
@@ -206,7 +192,6 @@ impl BinaryOpDigits<IBig> for SubOperation {
         IBig::from_digits_scarry(rhs, scarry)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
         let scarry = ibig_core::sub_signed_sdigit(&mut lhs, rhs);
         IBig::from_digits_scarry(lhs, scarry)
@@ -225,7 +210,6 @@ impl BinaryOpDigits<IBig> for SubOperation {
         IBig::from_digits_scarry(lhs, scarry)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {
         // Reuse `lhs`'s storage.
         Self::apply_val_ref(lhs, &rhs)

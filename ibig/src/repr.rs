@@ -45,14 +45,12 @@ pub struct UBig(
 
 impl UBig {
     /// Construct from a single digit.
-    #[inline]
     pub(crate) fn from_digit(digit: Digit) -> UBig {
         // A single digit is always canonical.
         UBig(smallvec![digit])
     }
 
     /// Construct from a single digit, usable in `const` contexts.
-    #[inline]
     pub(crate) const fn const_from_digit(digit: Digit) -> UBig {
         const { assert!(INLINE_DIGITS >= 1) };
         let mut digits = [Digit::ZERO; INLINE_DIGITS];
@@ -63,7 +61,6 @@ impl UBig {
     }
 
     /// Construct from two digits.
-    #[inline]
     pub(crate) fn from_two_digits(low: Digit, high: Digit) -> UBig {
         if high == Digit::ZERO {
             UBig::from_digit(low)
@@ -93,7 +90,6 @@ impl UBig {
     /// # Panics
     ///
     /// Panics if the resulting value has more than [`MAX_DIGITS`] digits.
-    #[inline]
     pub(crate) fn from_digits_carry(mut digits: Digits, carry: bool) -> UBig {
         if carry {
             // The appended `1` is a nonzero most-significant digit, so `digits` is already at
@@ -169,14 +165,12 @@ pub struct IBig(
 
 impl IBig {
     /// Construct from a single signed digit.
-    #[inline]
     pub(crate) fn from_digit(digit: SignedDigit) -> IBig {
         // A single signed digit is always canonical.
         IBig(smallvec![digit.cast_unsigned()])
     }
 
     /// Construct from a single signed digit, usable in `const` contexts.
-    #[inline]
     pub(crate) const fn const_from_digit(digit: SignedDigit) -> IBig {
         let mut buffer = [Digit::ZERO; INLINE_DIGITS];
         buffer[0] = digit.cast_unsigned();
@@ -187,7 +181,6 @@ impl IBig {
 
     /// Construct from the two little-endian digits of a two's complement representation,
     /// where `high` carries the sign.
-    #[inline]
     pub(crate) fn from_two_digits(low: Digit, high: SignedDigit) -> IBig {
         if high == sign_extension_sdigit(low.cast_signed()) {
             IBig::from_digit(low.cast_signed())
@@ -215,7 +208,6 @@ impl IBig {
     ///
     /// Panics if `digits` is empty, or if, after normalization, the value has more than
     /// [`MAX_DIGITS`] digits.
-    #[inline]
     pub(crate) fn from_digits_scarry(mut digits: Digits, scarry: SignedDigit) -> IBig {
         if scarry != sign_extension(&digits) {
             // `scarry` is a non-redundant most-significant digit, so `digits` is already at its
@@ -251,7 +243,6 @@ impl IBig {
     /// # Panics
     ///
     /// Panics if `digits` is empty or longer than `INLINE_DIGITS`.
-    #[inline]
     pub(crate) const fn const_from_digits(digits: &[Digit]) -> IBig {
         assert!(!digits.is_empty() && digits.len() <= INLINE_DIGITS);
         let mut buffer = [Digit::ZERO; INLINE_DIGITS];
@@ -289,7 +280,6 @@ pub(crate) trait AsDigits: Default {
 impl AsDigits for UBig {
     type SingleDigit = Digit;
 
-    #[inline]
     fn as_digits(&self) -> AsDigitsResult<Digit, &[Digit]> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0])
@@ -301,7 +291,6 @@ impl AsDigits for UBig {
         }
     }
 
-    #[inline]
     fn into_digits(self) -> AsDigitsResult<Digit, Digits> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0])
@@ -316,7 +305,6 @@ impl AsDigits for UBig {
 impl AsDigits for IBig {
     type SingleDigit = SignedDigit;
 
-    #[inline]
     fn as_digits(&self) -> AsDigitsResult<SignedDigit, &[Digit]> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0].cast_signed())
@@ -328,7 +316,6 @@ impl AsDigits for IBig {
         }
     }
 
-    #[inline]
     fn into_digits(self) -> AsDigitsResult<SignedDigit, Digits> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0].cast_signed())

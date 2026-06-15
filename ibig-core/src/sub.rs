@@ -20,7 +20,6 @@ use crate::{Digit, SignedDigit, not, sign_extension, sign_extension_sdigit};
 /// assert_eq!(a, [Digit::MAX, Digit::from(2u8)]);
 /// assert!(!borrow);
 /// ```
-#[inline]
 pub fn sub_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
     let (low, high) = lhs.split_at_mut(rhs.len());
     let borrow = sub_unsigned_unsigned_same_len(low, rhs);
@@ -98,7 +97,6 @@ pub fn sub_reverse_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) 
 /// assert_eq!(a, [Digit::MAX, Digit::from(7u8)]);
 /// assert!(!borrow);
 /// ```
-#[inline]
 pub fn sub_unsigned_digit(lhs: &mut [Digit], rhs: Digit) -> bool {
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (diff, borrow) = low.overflowing_sub(rhs);
@@ -122,7 +120,6 @@ pub fn sub_unsigned_digit(lhs: &mut [Digit], rhs: Digit) -> bool {
 /// let mut a = [Digit::ZERO];
 /// assert!(!sub_unsigned_borrow(&mut a, false));
 /// ```
-#[inline]
 pub fn sub_unsigned_borrow(lhs: &mut [Digit], borrow: bool) -> bool {
     borrow && sub_unsigned_1(lhs)
 }
@@ -169,7 +166,6 @@ pub fn sub_unsigned_1(lhs: &mut [Digit]) -> bool {
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
 /// assert_eq!(high, SignedDigit::from(-1i8));
 /// ```
-#[inline]
 pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension(rhs);
@@ -196,7 +192,6 @@ pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
 /// assert_eq!(high, SignedDigit::from(-1i8));
 /// ```
-#[inline]
 pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
@@ -225,7 +220,6 @@ pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 /// assert_eq!(a, [Digit::from(2u8)]);
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
-#[inline]
 pub fn sub_reverse_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension(rhs);
@@ -256,7 +250,6 @@ pub fn sub_reverse_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigi
 /// assert_eq!(a, [Digit::from(2u8)]);
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
-#[inline]
 pub fn sub_reverse_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension_sdigit(rhs);

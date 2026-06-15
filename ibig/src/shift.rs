@@ -135,7 +135,6 @@ impl_binary_operator!(
 struct ShrOperation;
 
 impl BinaryOpDigitsPrimitive<UBig, usize> for ShrOperation {
-    #[inline]
     fn apply_digit(lhs: Digit, rhs: usize) -> UBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() != 0 {
@@ -144,7 +143,6 @@ impl BinaryOpDigitsPrimitive<UBig, usize> for ShrOperation {
         UBig::from_digit(lhs >> index.bit_index())
     }
 
-    #[inline]
     fn apply_ref(lhs: &[Digit], rhs: usize) -> UBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() >= lhs.len() {
@@ -156,7 +154,6 @@ impl BinaryOpDigitsPrimitive<UBig, usize> for ShrOperation {
         UBig::from_digits(digits)
     }
 
-    #[inline]
     fn apply_val(mut lhs: Digits, rhs: usize) -> UBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() >= lhs.len() {
@@ -177,14 +174,12 @@ impl_binary_operator!(
 );
 
 impl BinaryOpDigitsPrimitive<IBig, usize> for ShrOperation {
-    #[inline]
     fn apply_digit(lhs: SignedDigit, rhs: usize) -> IBig {
         // Beyond `DIGIT_BITS - 1`, the arithmetic shift saturates to the sign.
         let small: u32 = rhs.min(DIGIT_BITS_USIZE - 1).try_into().unwrap();
         IBig::from_digit(lhs >> small)
     }
 
-    #[inline]
     fn apply_ref(lhs: &[Digit], rhs: usize) -> IBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() >= lhs.len() {
@@ -196,7 +191,6 @@ impl BinaryOpDigitsPrimitive<IBig, usize> for ShrOperation {
         IBig::from_digits(digits)
     }
 
-    #[inline]
     fn apply_val(mut lhs: Digits, rhs: usize) -> IBig {
         let index = BitIndex::from(rhs);
         if index.digit_index() >= lhs.len() {
@@ -219,7 +213,6 @@ impl_binary_operator!(
 impl IBig {
     /// The result of right-shifting the two's complement `digits` past all of its digits: the
     /// sign, `0` or `-1`.
-    #[inline]
     fn shr_whole(digits: &[Digit]) -> IBig {
         IBig::from_digit(ibig_core::sign_extension(digits))
     }

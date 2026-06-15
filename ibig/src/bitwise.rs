@@ -28,7 +28,6 @@ impl UBig {
     ///     UBig::from(0b1010u8)
     /// );
     /// ```
-    #[inline]
     pub fn bitandnot(&self, rhs: &UBig) -> UBig {
         match (self.as_digits(), rhs.as_digits()) {
             (Small(a), Small(b)) => UBig::from_digit(a & !b),
@@ -39,7 +38,6 @@ impl UBig {
     }
 
     /// [`UBig::bitandnot`] for a borrowed slice and a single digit.
-    #[inline]
     fn bitandnot_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         let mut digits = Digits::from_slice(lhs);
         digits[0] &= !rhs;
@@ -47,7 +45,6 @@ impl UBig {
     }
 
     /// [`UBig::bitandnot`] for two borrowed slices.
-    #[inline]
     fn bitandnot_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         let mut digits = Digits::from_slice(lhs);
         let n = digits.len().min(rhs.len());
@@ -60,17 +57,14 @@ impl UBig {
 struct NotOperation;
 
 impl UnaryOpDigits<IBig> for NotOperation {
-    #[inline]
     fn apply_digit(operand: SignedDigit) -> IBig {
         IBig::from_digit(!operand)
     }
 
-    #[inline]
     fn apply_ref(operand: &[Digit]) -> IBig {
         Self::apply_val(Digits::from_slice(operand))
     }
 
-    #[inline]
     fn apply_val(mut operand: Digits) -> IBig {
         ibig_core::not(&mut operand);
         IBig::from_digits(operand)
@@ -83,17 +77,14 @@ impl_unary_operator!(IBig, Not::not, NotOperation);
 struct BitAndOperation;
 
 impl CommutativeBinaryOpDigits<UBig> for BitAndOperation {
-    #[inline]
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs & rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         Self::apply_digit_digit(lhs[0], rhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         let n = lhs.len().min(rhs.len());
         let mut digits = Digits::from_slice(&lhs[..n]);
@@ -101,12 +92,10 @@ impl CommutativeBinaryOpDigits<UBig> for BitAndOperation {
         UBig::from_digits(digits)
     }
 
-    #[inline]
     fn apply_val_digit(lhs: Digits, rhs: Digit) -> UBig {
         Self::apply_ref_digit(&lhs, rhs)
     }
 
-    #[inline]
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
         let n = lhs.len().min(rhs.len());
         lhs.truncate(n);
@@ -114,7 +103,6 @@ impl CommutativeBinaryOpDigits<UBig> for BitAndOperation {
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from shorter operand.
         if lhs.len() <= rhs.len() {
@@ -134,12 +122,10 @@ impl_binary_operator!(
 );
 
 impl CommutativeBinaryOpDigits<IBig> for BitAndOperation {
-    #[inline]
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs & rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
         if rhs.is_negative() {
             // High digits are preserved.
@@ -150,7 +136,6 @@ impl CommutativeBinaryOpDigits<IBig> for BitAndOperation {
         }
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
         if rhs.is_negative() {
             // High digits are preserved.
@@ -224,24 +209,20 @@ impl_binary_operator!(
 struct BitOrOperation;
 
 impl CommutativeBinaryOpDigits<UBig> for BitOrOperation {
-    #[inline]
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs | rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         Self::apply_val_digit(Digits::from_slice(lhs), rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
         // OR with a single digit only touches the low digit; the high digits are kept.
         lhs[0] |= rhs;
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         let (longer, shorter) = if lhs.len() >= rhs.len() {
             (lhs, rhs)
@@ -251,7 +232,6 @@ impl CommutativeBinaryOpDigits<UBig> for BitOrOperation {
         Self::apply_val_ref(Digits::from_slice(longer), shorter)
     }
 
-    #[inline]
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
         // The high digits of the longer operand are kept (OR with the zero-extension).
         if lhs.len() >= rhs.len() {
@@ -264,7 +244,6 @@ impl CommutativeBinaryOpDigits<UBig> for BitOrOperation {
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from the longer operand.
         if lhs.len() >= rhs.len() {
@@ -284,12 +263,10 @@ impl_binary_operator!(
 );
 
 impl CommutativeBinaryOpDigits<IBig> for BitOrOperation {
-    #[inline]
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs | rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
         if rhs.is_negative() {
             // OR with a negative value sets every high bit, collapsing to a single digit.
@@ -300,7 +277,6 @@ impl CommutativeBinaryOpDigits<IBig> for BitOrOperation {
         }
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
         if rhs.is_negative() {
             // OR with a negative value sets every high bit, collapsing to a single digit.
@@ -375,24 +351,20 @@ impl_binary_operator!(
 struct BitXorOperation;
 
 impl CommutativeBinaryOpDigits<UBig> for BitXorOperation {
-    #[inline]
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
         UBig::from_digit(lhs ^ rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         Self::apply_val_digit(Digits::from_slice(lhs), rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
         // XOR with a single digit only touches the low digit; the high digits are kept.
         lhs[0] ^= rhs;
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         let (longer, shorter) = if lhs.len() >= rhs.len() {
             (lhs, rhs)
@@ -402,7 +374,6 @@ impl CommutativeBinaryOpDigits<UBig> for BitXorOperation {
         Self::apply_val_ref(Digits::from_slice(longer), shorter)
     }
 
-    #[inline]
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
         // The high digits of the longer operand are kept (XOR with the zero-extension).
         if lhs.len() >= rhs.len() {
@@ -415,7 +386,6 @@ impl CommutativeBinaryOpDigits<UBig> for BitXorOperation {
         UBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from the longer operand.
         if lhs.len() >= rhs.len() {
@@ -435,17 +405,14 @@ impl_binary_operator!(
 );
 
 impl CommutativeBinaryOpDigits<IBig> for BitXorOperation {
-    #[inline]
     fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
         IBig::from_digit(lhs ^ rhs)
     }
 
-    #[inline]
     fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
         Self::apply_val_digit(Digits::from_slice(lhs), rhs)
     }
 
-    #[inline]
     fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
         let (lhs_low, lhs_high) = lhs.split_first_mut().unwrap();
         *lhs_low ^= rhs.cast_unsigned();
@@ -456,7 +423,6 @@ impl CommutativeBinaryOpDigits<IBig> for BitXorOperation {
         IBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
         // Clone the longer operand.
         if lhs.len() >= rhs.len() {
@@ -488,7 +454,6 @@ impl CommutativeBinaryOpDigits<IBig> for BitXorOperation {
         IBig::from_digits(lhs)
     }
 
-    #[inline]
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {
         // Reuse storage from the longer operand.
         if lhs.len() >= rhs.len() {
