@@ -7,16 +7,16 @@ use crate::repr::{
 };
 use ibig_core::Digit;
 
-/// A unary operation.
-pub(crate) trait UnaryOp {
+/// A unary operation where the operand is borrowed.
+pub(crate) trait UnaryOpRef {
     /// The type of the operand.
     type Operand;
 
     /// The type of the result.
     type Output;
 
-    /// Apply the operation.
-    fn apply_val(value: Self::Operand) -> Self::Output;
+    /// The operand is borrowed.
+    fn apply_ref(value: &Self::Operand) -> Self::Output;
 }
 
 /// A unary operation where the operand can be borrowed or owned.
@@ -93,12 +93,12 @@ pub(crate) trait UnaryOpRefBig {
     fn apply_ref(operand: &[Digit]) -> Self::Output;
 }
 
-/// Every [`UnaryOpRefBig`] induces a [`UnaryOp`].
-impl<Op: UnaryOpRefBig> UnaryOp for Op {
+/// Every [`UnaryOpRefBig`] induces a [`UnaryOpRef`].
+impl<Op: UnaryOpRefBig> UnaryOpRef for Op {
     type Operand = Op::Operand;
     type Output = Op::Output;
 
-    fn apply_val(value: Self::Operand) -> Self::Output {
+    fn apply_ref(value: &Self::Operand) -> Self::Output {
         match value.as_digits() {
             Small(d) => <Op as UnaryOpRefBig>::apply_digit(d),
             Large(digits) => <Op as UnaryOpRefBig>::apply_ref(digits),

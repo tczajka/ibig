@@ -1,31 +1,20 @@
 //! Sign operations on [`IBig`].
 
 use crate::IBig;
-use crate::ops::{UnaryOpRefValBig, impl_unary_operator};
+use crate::ops::{UnaryOpRef, UnaryOpRefBig, UnaryOpRefValBig, impl_unary_operator};
 use crate::repr::Digits;
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-};
 use core::ops::Neg;
 use ibig_core::{Digit, SignedDigit};
 
 impl IBig {
     /// Returns `true` if the number is negative (less than zero).
     pub fn is_negative(&self) -> bool {
-        match self.as_digits() {
-            Small(digit) => digit.is_negative(),
-            Large(digits) => ibig_core::is_negative(digits),
-        }
+        <IsNegativeIBig as UnaryOpRef>::apply_ref(self)
     }
 
     /// Returns `true` if the number is positive (greater than zero).
     pub fn is_positive(&self) -> bool {
-        match self.as_digits() {
-            Small(digit) => digit.is_positive(),
-            // A multi-digit value is never zero, so it is positive iff not negative.
-            Large(digits) => !ibig_core::is_negative(digits),
-        }
+        <IsPositiveIBig as UnaryOpRef>::apply_ref(self)
     }
 
     /// Returns a number representing the sign of `self`:
@@ -42,16 +31,57 @@ impl IBig {
     /// assert_eq!(IBig::from(5i8).signum(), IBig::from(1i8));
     /// ```
     pub fn signum(&self) -> IBig {
-        match self.as_digits() {
-            Small(digit) => IBig::from_digit(digit.signum()),
-            Large(digits) => IBig::signum_ref(digits),
-        }
+        <SignumIBig as UnaryOpRef>::apply_ref(self)
+    }
+}
+
+/// The [`IBig::is_negative`] operation.
+enum IsNegativeIBig {}
+
+impl UnaryOpRefBig for IsNegativeIBig {
+    type Operand = IBig;
+    type Output = bool;
+
+    fn apply_digit(operand: SignedDigit) -> bool {
+        operand.is_negative()
     }
 
-    /// [`IBig::signum`] for a borrowed slice.
-    fn signum_ref(digits: &[Digit]) -> IBig {
+    fn apply_ref(operand: &[Digit]) -> bool {
+        ibig_core::is_negative(operand)
+    }
+}
+
+/// The [`IBig::is_positive`] operation.
+enum IsPositiveIBig {}
+
+impl UnaryOpRefBig for IsPositiveIBig {
+    type Operand = IBig;
+    type Output = bool;
+
+    fn apply_digit(operand: SignedDigit) -> bool {
+        operand.is_positive()
+    }
+
+    fn apply_ref(operand: &[Digit]) -> bool {
+        // A multi-digit value is never zero, so it is positive iff not negative.
+        !ibig_core::is_negative(operand)
+    }
+}
+
+/// The [`IBig::signum`] operation.
+enum SignumIBig {}
+
+impl UnaryOpRefBig for SignumIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
+    fn apply_digit(operand: SignedDigit) -> IBig {
+        IBig::from_digit(operand.signum())
+    }
+
+    fn apply_ref(operand: &[Digit]) -> IBig {
         // A multi-digit value is never zero.
-        if ibig_core::is_negative(digits) {
+        if ibig_core::is_negative(operand) {
             IBig::from(-1i8)
         } else {
             IBig::from(1i8)
