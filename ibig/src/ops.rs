@@ -7,10 +7,8 @@ use crate::repr::{
 };
 use ibig_core::Digit;
 
-/// A unary operation.
-///
-/// The operand can be borrowed or owned.
-pub(crate) trait UnaryOp {
+/// A unary operation where the operand can be borrowed or owned.
+pub(crate) trait UnaryOpRefVal {
     /// The type of the operand.
     type Operand;
 
@@ -45,8 +43,8 @@ pub(crate) trait UnaryOpBig {
     fn apply_val(operand: Digits) -> Self::Output;
 }
 
-/// Every [`UnaryOpBig`] induces a [`UnaryOp`].
-impl<Op: UnaryOpBig> UnaryOp for Op {
+/// Every [`UnaryOpBig`] induces a [`UnaryOpRefVal`].
+impl<Op: UnaryOpBig> UnaryOpRefVal for Op {
     type Operand = Op::Operand;
     type Output = Op::Output;
 
@@ -66,7 +64,7 @@ impl<Op: UnaryOpBig> UnaryOp for Op {
 }
 
 /// Implements a unary operator for a value type `$t`, deriving the owned and borrowed forms from
-/// an [`UnaryOp`] implemented by the marker type `$op`.
+/// an [`UnaryOpRefVal`] implemented by the marker type `$op`.
 ///
 /// `$trait`/`$method` is the operator trait; it must be in scope at the call site.
 macro_rules! impl_unary_operator {
@@ -75,7 +73,7 @@ macro_rules! impl_unary_operator {
             type Output = $output;
 
             fn $method(self) -> Self::Output {
-                <$op as $crate::ops::UnaryOp>::apply_val(self)
+                <$op as $crate::ops::UnaryOpRefVal>::apply_val(self)
             }
         }
 
@@ -83,7 +81,7 @@ macro_rules! impl_unary_operator {
             type Output = $output;
 
             fn $method(self) -> Self::Output {
-                <$op as $crate::ops::UnaryOp>::apply_ref(self)
+                <$op as $crate::ops::UnaryOpRefVal>::apply_ref(self)
             }
         }
     };
@@ -91,10 +89,8 @@ macro_rules! impl_unary_operator {
 
 pub(crate) use impl_unary_operator;
 
-/// A binary operation.
-///
-/// Each operand appears can be borrowed or owned.
-pub(crate) trait BinaryOp {
+/// A binary operation where each operand can be borrowed or owned.
+pub(crate) trait BinaryOpRefVal {
     /// The type of the left operand.
     type Left;
 
@@ -228,8 +224,8 @@ pub(crate) struct BigBig<Op>(Op);
 /// Wrapper indicating a [`BinaryOpBigOther`].
 pub(crate) struct BigOther<Op>(Op);
 
-/// Every [`BinaryOpBigBig`] induces a [`BinaryOp`].
-impl<Op: BinaryOpBigBig> BinaryOp for BigBig<Op> {
+/// Every [`BinaryOpBigBig`] induces a [`BinaryOpRefVal`].
+impl<Op: BinaryOpBigBig> BinaryOpRefVal for BigBig<Op> {
     type Left = Op::Left;
     type Right = Op::Right;
     type Output = Op::Output;
@@ -271,8 +267,8 @@ impl<Op: BinaryOpBigBig> BinaryOp for BigBig<Op> {
     }
 }
 
-/// Every [`BinaryOpBigOther`] with a `Copy` right operand induces a [`BinaryOp`].
-impl<Op: BinaryOpBigOther> BinaryOp for BigOther<Op>
+/// Every [`BinaryOpBigOther`] with a `Copy` right operand induces a [`BinaryOpRefVal`].
+impl<Op: BinaryOpBigOther> BinaryOpRefVal for BigOther<Op>
 where
     Op::Right: Copy,
 {
@@ -351,7 +347,7 @@ impl<Op: CommutativeBinaryOpBig> BinaryOpBigBig for Op {
 
 /// Implements a binary operator for a left operand type `$left` and
 /// right operand type `$right`, deriving every owned/borrowed operand combination from a
-/// [`BinaryOp`] implemented by the marker type `$op`.
+/// [`BinaryOpRefVal`] implemented by the marker type `$op`.
 ///
 /// `$trait`/`$method` is the operator trait; it must be in scope at the call site.
 macro_rules! impl_binary_operator {
@@ -360,7 +356,7 @@ macro_rules! impl_binary_operator {
             type Output = $output;
 
             fn $method(self, rhs: $right) -> $output {
-                <$op as $crate::ops::BinaryOp>::apply_val_val(self, rhs)
+                <$op as $crate::ops::BinaryOpRefVal>::apply_val_val(self, rhs)
             }
         }
 
@@ -368,7 +364,7 @@ macro_rules! impl_binary_operator {
             type Output = $output;
 
             fn $method(self, rhs: &$right) -> $output {
-                <$op as $crate::ops::BinaryOp>::apply_val_ref(self, rhs)
+                <$op as $crate::ops::BinaryOpRefVal>::apply_val_ref(self, rhs)
             }
         }
 
@@ -376,7 +372,7 @@ macro_rules! impl_binary_operator {
             type Output = $output;
 
             fn $method(self, rhs: $right) -> $output {
-                <$op as $crate::ops::BinaryOp>::apply_ref_val(self, rhs)
+                <$op as $crate::ops::BinaryOpRefVal>::apply_ref_val(self, rhs)
             }
         }
 
@@ -384,19 +380,25 @@ macro_rules! impl_binary_operator {
             type Output = $output;
 
             fn $method(self, rhs: &$right) -> $output {
-                <$op as $crate::ops::BinaryOp>::apply_ref_ref(self, rhs)
+                <$op as $crate::ops::BinaryOpRefVal>::apply_ref_ref(self, rhs)
             }
         }
 
         impl $assign_trait<$right> for $left {
             fn $assign_method(&mut self, rhs: $right) {
-                *self = <$op as $crate::ops::BinaryOp>::apply_val_val(::core::mem::take(self), rhs);
+                *self = <$op as $crate::ops::BinaryOpRefVal>::apply_val_val(
+                    ::core::mem::take(self),
+                    rhs,
+                );
             }
         }
 
         impl $assign_trait<&$right> for $left {
             fn $assign_method(&mut self, rhs: &$right) {
-                *self = <$op as $crate::ops::BinaryOp>::apply_val_ref(::core::mem::take(self), rhs);
+                *self = <$op as $crate::ops::BinaryOpRefVal>::apply_val_ref(
+                    ::core::mem::take(self),
+                    rhs,
+                );
             }
         }
     };
