@@ -1,11 +1,7 @@
 //! Conversions to and from [`UBig`] and [`IBig`].
 
 use crate::ops::{UnaryOpRefVal, UnaryOpRefValBig};
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-    Digits,
-};
+use crate::repr::Digits;
 use crate::{IBig, TryFromBigError, UBig};
 use core::num::TryFromIntError;
 use ibig_core::{Digit, SignedDigit};
@@ -82,19 +78,6 @@ impl IBig {
     }
 }
 
-/// Forwards `TryFrom<$to> for $from` to the by-reference conversion.
-macro_rules! try_from_big_value {
-    ($to:ty, $from:ty) => {
-        impl TryFrom<$from> for $to {
-            type Error = TryFromBigError;
-
-            fn try_from(value: $from) -> Result<Self, TryFromBigError> {
-                Self::try_from(&value)
-            }
-        }
-    };
-}
-
 /// Implements `From<$t> for UBig` for an unsigned primitive: a value that fits in a single
 /// digit takes the fast path, otherwise it goes through the little-endian bytes.
 macro_rules! ubig_from_unsigned {
@@ -153,93 +136,132 @@ impl From<char> for UBig {
     }
 }
 
-/// Implements `TryFrom<UBig> for $t` for an unsigned primitive. A single-digit value is
-/// converted directly; a larger value is read from its little-endian bytes.
+/// Implements the [`UBig`]-to-`$t` conversion for an unsigned primitive through a `$marker`
+/// type implementing [`UnaryOpRefValBig`].
 macro_rules! try_from_ubig_unsigned {
-    ($t:ty) => {
+    ($t:ty, $marker:ident) => {
+        enum $marker {}
+
+        impl UnaryOpRefValBig for $marker {
+            type Operand = UBig;
+            type Output = Result<$t, TryFromBigError>;
+
+            fn apply_digit(digit: Digit) -> Result<$t, TryFromBigError> {
+                <$t>::try_from(digit).map_err(|_| TryFromBigError)
+            }
+
+            fn apply_ref(digits: &[Digit]) -> Result<$t, TryFromBigError> {
+                const N: usize = size_of::<$t>();
+                const {
+                    assert!(Digit::BYTES.is_power_of_two());
+                    assert!(N.is_power_of_two());
+                }
+
+                // The minimum required number of bits is b:
+                // b > (len - 1) * Digit::BITS
+                // b <= len * Digit::BITS
+                //
+                // Since len >= 2 and Digit::BITS is a power of two:
+                // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
+                //
+                // If the number fits, we must have:
+                // b <= N * 8
+                // next_power_of_two(b) <= N * 8
+                // len * Digit::BITS <= N * 8
+                // len * Digit::BYTES <= N
+
+                // Compile-time fast path: two-digit values are too large for the target type.
+                if 2 * Digit::BYTES > N {
+                    return Err(TryFromBigError);
+                }
+
+                let num_bytes = digits.len() * Digit::BYTES;
+                if num_bytes > N {
+                    return Err(TryFromBigError);
+                }
+                let mut arr = [0u8; N];
+                ibig_core::to_bytes_unsigned(digits, &mut arr);
+                Ok(<$t>::from_le_bytes(arr))
+            }
+
+            fn apply_val(digits: Digits) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefValBig>::apply_ref(&digits)
+            }
+        }
+
+        impl TryFrom<UBig> for $t {
+            type Error = TryFromBigError;
+
+            fn try_from(value: UBig) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefVal>::apply_val(value)
+            }
+        }
+
         impl TryFrom<&UBig> for $t {
             type Error = TryFromBigError;
 
             fn try_from(value: &UBig) -> Result<$t, TryFromBigError> {
-                match value.as_digits() {
-                    Small(digit) => <$t>::try_from(digit).map_err(|_| TryFromBigError),
-                    Large(digits) => {
-                        const N: usize = size_of::<$t>();
-                        const {
-                            assert!(Digit::BYTES.is_power_of_two());
-                            assert!(N.is_power_of_two());
-                        }
-
-                        // The minimum required number of bits is b:
-                        // b > (len - 1) * Digit::BITS
-                        // b <= len * Digit::BITS
-                        //
-                        // Since len >= 2 and Digit::BITS is a power of two:
-                        // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
-                        //
-                        // If the number fits, we must have:
-                        // b <= N * 8
-                        // next_power_of_two(b) <= N * 8
-                        // len * Digit::BITS <= N * 8
-                        // len * Digit::BYTES <= N
-
-                        // Compile-time fast path: two-digit values are too large for the target type.
-                        if 2 * Digit::BYTES > N {
-                            return Err(TryFromBigError);
-                        }
-
-                        let num_bytes = digits.len() * Digit::BYTES;
-                        if num_bytes > N {
-                            return Err(TryFromBigError);
-                        }
-                        let mut arr = [0u8; N];
-                        ibig_core::to_bytes_unsigned(digits, &mut arr);
-                        Ok(<$t>::from_le_bytes(arr))
-                    }
-                }
+                <$marker as UnaryOpRefVal>::apply_ref(value)
             }
         }
-
-        try_from_big_value!($t, UBig);
     };
 }
 
-try_from_ubig_unsigned!(u8);
-try_from_ubig_unsigned!(u16);
-try_from_ubig_unsigned!(u32);
-try_from_ubig_unsigned!(u64);
-try_from_ubig_unsigned!(u128);
-try_from_ubig_unsigned!(usize);
+try_from_ubig_unsigned!(u8, UBigToU8);
+try_from_ubig_unsigned!(u16, UBigToU16);
+try_from_ubig_unsigned!(u32, UBigToU32);
+try_from_ubig_unsigned!(u64, UBigToU64);
+try_from_ubig_unsigned!(u128, UBigToU128);
+try_from_ubig_unsigned!(usize, UBigToUsize);
 
-/// Implements `TryFrom<UBig> for $signed` for a signed primitive: a single-digit value is
-/// converted directly; otherwise the value is converted to the same-width unsigned type
-/// `$unsigned` and then narrowed (which rejects values past the signed maximum).
+/// Implements the [`UBig`]-to-`$signed` conversion for a signed primitive through a `$marker`
+/// type implementing [`UnaryOpRefValBig`].
 macro_rules! try_from_ubig_signed {
-    ($signed:ty => $unsigned:ty) => {
+    ($signed:ty, $marker:ident, $unsigned_marker:ident) => {
+        enum $marker {}
+
+        impl UnaryOpRefValBig for $marker {
+            type Operand = UBig;
+            type Output = Result<$signed, TryFromBigError>;
+
+            fn apply_digit(digit: Digit) -> Result<$signed, TryFromBigError> {
+                <$signed>::try_from(digit).map_err(|_| TryFromBigError)
+            }
+
+            fn apply_ref(digits: &[Digit]) -> Result<$signed, TryFromBigError> {
+                let unsigned = <$unsigned_marker as UnaryOpRefValBig>::apply_ref(digits)?;
+                <$signed>::try_from(unsigned).map_err(|_| TryFromBigError)
+            }
+
+            fn apply_val(digits: Digits) -> Result<$signed, TryFromBigError> {
+                <$marker as UnaryOpRefValBig>::apply_ref(&digits)
+            }
+        }
+
+        impl TryFrom<UBig> for $signed {
+            type Error = TryFromBigError;
+
+            fn try_from(value: UBig) -> Result<$signed, TryFromBigError> {
+                <$marker as UnaryOpRefVal>::apply_val(value)
+            }
+        }
+
         impl TryFrom<&UBig> for $signed {
             type Error = TryFromBigError;
 
             fn try_from(value: &UBig) -> Result<$signed, TryFromBigError> {
-                // Fast path.
-                if let Small(digit) = value.as_digits() {
-                    return <$signed>::try_from(digit).map_err(|_| TryFromBigError);
-                }
-                // Slow path.
-                let unsigned = <$unsigned>::try_from(value)?;
-                <$signed>::try_from(unsigned).map_err(|_| TryFromBigError)
+                <$marker as UnaryOpRefVal>::apply_ref(value)
             }
         }
-
-        try_from_big_value!($signed, UBig);
     };
 }
 
-try_from_ubig_signed!(i8 => u8);
-try_from_ubig_signed!(i16 => u16);
-try_from_ubig_signed!(i32 => u32);
-try_from_ubig_signed!(i64 => u64);
-try_from_ubig_signed!(i128 => u128);
-try_from_ubig_signed!(isize => usize);
+try_from_ubig_signed!(i8, UBigToI8, UBigToU8);
+try_from_ubig_signed!(i16, UBigToI16, UBigToU16);
+try_from_ubig_signed!(i32, UBigToI32, UBigToU32);
+try_from_ubig_signed!(i64, UBigToI64, UBigToU64);
+try_from_ubig_signed!(i128, UBigToI128, UBigToU128);
+try_from_ubig_signed!(isize, UBigToIsize, UBigToUsize);
 
 /// The [`UBig`]-to-`bool` conversion: zero is `false`, one is `true`, anything else is out
 /// of range.
@@ -327,131 +349,169 @@ impl From<bool> for IBig {
     }
 }
 
-/// Implements `TryFrom<IBig> for $t` for a signed primitive. A single-digit value is
-/// converted directly; a larger value is read from its sign-extended little-endian bytes.
-macro_rules! signed_from_ibig {
-    ($t:ty) => {
+/// Implements the [`IBig`]-to-`$t` conversion for a signed primitive through a `$marker` type
+/// implementing [`UnaryOpRefValBig`].
+macro_rules! try_from_ibig_signed {
+    ($t:ty, $marker:ident) => {
+        enum $marker {}
+
+        impl UnaryOpRefValBig for $marker {
+            type Operand = IBig;
+            type Output = Result<$t, TryFromBigError>;
+
+            fn apply_digit(digit: SignedDigit) -> Result<$t, TryFromBigError> {
+                <$t>::try_from(digit).map_err(|_| TryFromBigError)
+            }
+
+            fn apply_ref(digits: &[Digit]) -> Result<$t, TryFromBigError> {
+                const N: usize = size_of::<$t>();
+                const {
+                    assert!(Digit::BYTES.is_power_of_two());
+                    assert!(N.is_power_of_two());
+                }
+
+                // The minimum required number of bits is b:
+                // b > (len - 1) * Digit::BITS
+                // b <= len * Digit::BITS
+                //
+                // Since len >= 2 and Digit::BITS is a power of two:
+                // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
+                //
+                // If the number fits, we must have:
+                // b <= N * 8
+                // next_power_of_two(b) <= N * 8
+                // len * Digit::BITS <= N * 8
+                // len * Digit::BYTES <= N
+
+                // Compile-time fast path: two-digit values are too large for the target type.
+                if 2 * Digit::BYTES > N {
+                    return Err(TryFromBigError);
+                }
+
+                let num_bytes = digits.len() * Digit::BYTES;
+                if num_bytes > N {
+                    return Err(TryFromBigError);
+                }
+                let mut arr = [0u8; N];
+                ibig_core::to_bytes_signed(digits, &mut arr);
+                Ok(<$t>::from_le_bytes(arr))
+            }
+
+            fn apply_val(digits: Digits) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefValBig>::apply_ref(&digits)
+            }
+        }
+
+        impl TryFrom<IBig> for $t {
+            type Error = TryFromBigError;
+
+            fn try_from(value: IBig) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefVal>::apply_val(value)
+            }
+        }
+
         impl TryFrom<&IBig> for $t {
             type Error = TryFromBigError;
 
             fn try_from(value: &IBig) -> Result<$t, TryFromBigError> {
-                match value.as_digits() {
-                    Small(digit) => <$t>::try_from(digit).map_err(|_| TryFromBigError),
-                    Large(digits) => {
-                        const N: usize = size_of::<$t>();
-                        const {
-                            assert!(Digit::BYTES.is_power_of_two());
-                            assert!(N.is_power_of_two());
-                        }
-
-                        // The minimum required number of bits is b:
-                        // b > (len - 1) * Digit::BITS
-                        // b <= len * Digit::BITS
-                        //
-                        // Since len >= 2 and Digit::BITS is a power of two:
-                        // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
-                        //
-                        // If the number fits, we must have:
-                        // b <= N * 8
-                        // next_power_of_two(b) <= N * 8
-                        // len * Digit::BITS <= N * 8
-                        // len * Digit::BYTES <= N
-
-                        // Compile-time fast path: two-digit values are too large for the target type.
-                        if 2 * Digit::BYTES > N {
-                            return Err(TryFromBigError);
-                        }
-
-                        // Slow path.
-                        let num_bytes = digits.len() * Digit::BYTES;
-                        if num_bytes > N {
-                            return Err(TryFromBigError);
-                        }
-                        let mut arr = [0u8; N];
-                        ibig_core::to_bytes_signed(digits, &mut arr);
-                        Ok(<$t>::from_le_bytes(arr))
-                    }
-                }
+                <$marker as UnaryOpRefVal>::apply_ref(value)
             }
         }
-
-        try_from_big_value!($t, IBig);
     };
 }
 
-signed_from_ibig!(i8);
-signed_from_ibig!(i16);
-signed_from_ibig!(i32);
-signed_from_ibig!(i64);
-signed_from_ibig!(i128);
-signed_from_ibig!(isize);
+try_from_ibig_signed!(i8, IBigToI8);
+try_from_ibig_signed!(i16, IBigToI16);
+try_from_ibig_signed!(i32, IBigToI32);
+try_from_ibig_signed!(i64, IBigToI64);
+try_from_ibig_signed!(i128, IBigToI128);
+try_from_ibig_signed!(isize, IBigToIsize);
 
-/// Implements `TryFrom<IBig> for $t` for an unsigned primitive. A single-digit value is
-/// converted directly; a larger value must be non-negative and is read from the little-endian
-/// bytes of its unsigned magnitude.
-macro_rules! unsigned_from_ibig {
-    ($t:ty) => {
+/// Implements the [`IBig`]-to-`$t` conversion for an unsigned primitive through a `$marker`
+/// type implementing [`UnaryOpRefValBig`].
+macro_rules! try_from_ibig_unsigned {
+    ($t:ty, $marker:ident) => {
+        enum $marker {}
+
+        impl UnaryOpRefValBig for $marker {
+            type Operand = IBig;
+            type Output = Result<$t, TryFromBigError>;
+
+            fn apply_digit(digit: SignedDigit) -> Result<$t, TryFromBigError> {
+                <$t>::try_from(digit).map_err(|_| TryFromBigError)
+            }
+
+            fn apply_ref(digits: &[Digit]) -> Result<$t, TryFromBigError> {
+                // A negative value is out of range for any unsigned type.
+                if ibig_core::is_negative(digits) {
+                    return Err(TryFromBigError);
+                }
+                // A non-negative value carries at most one most-significant sign-extension
+                // zero digit; drop it.
+                let (&top, rest) = digits.split_last().unwrap();
+                let digits = if top == Digit::ZERO { rest } else { digits };
+
+                const N: usize = size_of::<$t>();
+                const {
+                    assert!(Digit::BYTES.is_power_of_two());
+                    assert!(N.is_power_of_two());
+                }
+
+                // The minimum required number of bits is b.
+                // For len >= 2:
+                // b > (len - 1) * Digit::BITS
+                // b <= len * Digit::BITS
+                //
+                // For len = 1 the top digit's high bit is set (since we don't fit in a single
+                // signed digit, otherwise we would have used the fast path).
+                // b = len * Digit::BITS
+                //
+                // In either case:
+                // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
+                //
+                // If the number fits, we must have:
+                // b <= N * 8
+                // next_power_of_two(b) <= N * 8
+                // len * Digit::BITS <= N * 8
+                // len * Digit::BYTES <= N
+                let num_bytes = digits.len() * Digit::BYTES;
+                if num_bytes > N {
+                    return Err(TryFromBigError);
+                }
+                let mut arr = [0u8; N];
+                ibig_core::to_bytes_unsigned(digits, &mut arr);
+                Ok(<$t>::from_le_bytes(arr))
+            }
+
+            fn apply_val(digits: Digits) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefValBig>::apply_ref(&digits)
+            }
+        }
+
+        impl TryFrom<IBig> for $t {
+            type Error = TryFromBigError;
+
+            fn try_from(value: IBig) -> Result<$t, TryFromBigError> {
+                <$marker as UnaryOpRefVal>::apply_val(value)
+            }
+        }
+
         impl TryFrom<&IBig> for $t {
             type Error = TryFromBigError;
 
             fn try_from(value: &IBig) -> Result<$t, TryFromBigError> {
-                match value.as_digits() {
-                    Small(digit) => <$t>::try_from(digit).map_err(|_| TryFromBigError),
-                    Large(digits) => {
-                        // A negative value is out of range for any unsigned type.
-                        if ibig_core::is_negative(digits) {
-                            return Err(TryFromBigError);
-                        }
-                        // A non-negative value carries at most one most-significant sign-extension
-                        // zero digit; drop it.
-                        let (&top, rest) = digits.split_last().unwrap();
-                        let digits = if top == Digit::ZERO { rest } else { digits };
-
-                        const N: usize = size_of::<$t>();
-                        const {
-                            assert!(Digit::BYTES.is_power_of_two());
-                            assert!(N.is_power_of_two());
-                        }
-
-                        // The minimum required number of bits is b.
-                        // For len >= 2:
-                        // b > (len - 1) * Digit::BITS
-                        // b <= len * Digit::BITS
-                        //
-                        // For len = 1 the top digit's high bit is set (since we don't fit in a single
-                        // signed digit, otherwise we would have used the fast path).
-                        // b = len * Digit::BITS
-                        //
-                        // In either case:
-                        // next_power_of_two(b) = next_power_of_two(len * Digit::BITS)
-                        //
-                        // If the number fits, we must have:
-                        // b <= N * 8
-                        // next_power_of_two(b) <= N * 8
-                        // len * Digit::BITS <= N * 8
-                        // len * Digit::BYTES <= N
-                        let num_bytes = digits.len() * Digit::BYTES;
-                        if num_bytes > N {
-                            return Err(TryFromBigError);
-                        }
-                        let mut arr = [0u8; N];
-                        ibig_core::to_bytes_unsigned(digits, &mut arr);
-                        Ok(<$t>::from_le_bytes(arr))
-                    }
-                }
+                <$marker as UnaryOpRefVal>::apply_ref(value)
             }
         }
-
-        try_from_big_value!($t, IBig);
     };
 }
 
-unsigned_from_ibig!(u8);
-unsigned_from_ibig!(u16);
-unsigned_from_ibig!(u32);
-unsigned_from_ibig!(u64);
-unsigned_from_ibig!(u128);
-unsigned_from_ibig!(usize);
+try_from_ibig_unsigned!(u8, IBigToU8);
+try_from_ibig_unsigned!(u16, IBigToU16);
+try_from_ibig_unsigned!(u32, IBigToU32);
+try_from_ibig_unsigned!(u64, IBigToU64);
+try_from_ibig_unsigned!(u128, IBigToU128);
+try_from_ibig_unsigned!(usize, IBigToUsize);
 
 /// The [`IBig`]-to-`bool` conversion: zero is `false`, one is `true`, anything else is out
 /// of range.
