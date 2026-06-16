@@ -84,6 +84,28 @@ impl UBig {
         UBig::shrink(digits)
     }
 
+    /// Construct from at most `INLINE_DIGITS` little-endian digits.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `digits.len() > INLINE_DIGITS`.
+    pub(crate) const fn const_from_digits(digits: &[Digit]) -> UBig {
+        assert!(digits.len() <= INLINE_DIGITS);
+
+        let mut buffer = [Digit::ZERO; INLINE_DIGITS];
+        let mut len = min_len_unsigned(digits);
+        let (dest, _) = buffer.split_at_mut(len);
+        let (src, _) = digits.split_at(len);
+        dest.copy_from_slice(src);
+
+        // `UBig` always keeps at least one digit.
+        if len == 0 {
+            len = 1;
+        }
+        // SAFETY: `len <= INLINE_DIGITS`.
+        UBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
+    }
+
     /// Construct from little-endian digits plus the carry out of an addition, appended as a
     /// most-significant `1` digit when set.
     ///
@@ -118,28 +140,6 @@ impl UBig {
             }
         }
         UBig(digits)
-    }
-
-    /// Construct from at most `INLINE_DIGITS` little-endian digits.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `digits.len() > INLINE_DIGITS`.
-    pub(crate) const fn const_from_digits(digits: &[Digit]) -> UBig {
-        assert!(digits.len() <= INLINE_DIGITS);
-
-        let mut buffer = [Digit::ZERO; INLINE_DIGITS];
-        let mut len = min_len_unsigned(digits);
-        let (dest, _) = buffer.split_at_mut(len);
-        let (src, _) = digits.split_at(len);
-        dest.copy_from_slice(src);
-
-        // `UBig` always keeps at least one digit.
-        if len == 0 {
-            len = 1;
-        }
-        // SAFETY: `len <= INLINE_DIGITS`.
-        UBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
     }
 
     /// Panics because a result would be negative. The single source of the "negative UBig"
@@ -200,6 +200,23 @@ impl IBig {
         IBig::shrink(digits)
     }
 
+    /// Construct from at most `INLINE_DIGITS` little-endian two's complement digits.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `digits` is empty or longer than `INLINE_DIGITS`.
+    pub(crate) const fn const_from_digits(digits: &[Digit]) -> IBig {
+        assert!(!digits.is_empty() && digits.len() <= INLINE_DIGITS);
+        let mut buffer = [Digit::ZERO; INLINE_DIGITS];
+        // `min_len_signed` is always at least 1, so the buffer keeps a sign-carrying digit.
+        let len = min_len_signed(digits);
+        let (dest, _) = buffer.split_at_mut(len);
+        let (src, _) = digits.split_at(len);
+        dest.copy_from_slice(src);
+        // SAFETY: `1 <= len <= INLINE_DIGITS`.
+        IBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
+    }
+
     /// Construct from little-endian two's complement digits plus the sign digit `scarry`
     /// returned by a signed addition or subtraction, appended unless it is a redundant
     /// sign-extension of the digit below it.
@@ -236,23 +253,6 @@ impl IBig {
             }
         }
         IBig(digits)
-    }
-
-    /// Construct from at most `INLINE_DIGITS` little-endian two's complement digits.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `digits` is empty or longer than `INLINE_DIGITS`.
-    pub(crate) const fn const_from_digits(digits: &[Digit]) -> IBig {
-        assert!(!digits.is_empty() && digits.len() <= INLINE_DIGITS);
-        let mut buffer = [Digit::ZERO; INLINE_DIGITS];
-        // `min_len_signed` is always at least 1, so the buffer keeps a sign-carrying digit.
-        let len = min_len_signed(digits);
-        let (dest, _) = buffer.split_at_mut(len);
-        let (src, _) = digits.split_at(len);
-        dest.copy_from_slice(src);
-        // SAFETY: `1 <= len <= INLINE_DIGITS`.
-        IBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
     }
 }
 
