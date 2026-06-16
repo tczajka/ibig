@@ -147,8 +147,8 @@ pub fn sub_unsigned_1(lhs: &mut [Digit]) -> bool {
     true
 }
 
-/// Subtracts the signed `rhs` from the signed `lhs` in place, returning a sign digit (0 or -1)
-/// that should be appended to `lhs`.
+/// Subtracts the signed `rhs` from the signed `lhs` in place, returning the signed carry
+/// (0 or -1).
 ///
 /// `rhs` must be non-empty and not longer than `lhs`.
 ///
@@ -175,8 +175,8 @@ pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     add_unsigned_scarry(high, low_carry) + lhs_extension
 }
 
-/// Subtracts the signed digit `rhs` from the non-empty signed `lhs` in place, returning a sign
-/// digit (0 or -1) that should be appended to `lhs`.
+/// Subtracts the signed digit `rhs` from the non-empty signed `lhs` in place, returning the
+/// signed carry (0 or -1).
 ///
 /// # Panics
 ///
@@ -202,7 +202,7 @@ pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 }
 
 /// Subtracts the signed `lhs` from the signed `rhs`, assigning `lhs = rhs - lhs` in place and
-/// returning a sign digit (0 or -1) that should be appended to `lhs`.
+/// returning the signed carry (0 or -1).
 ///
 /// `rhs` must be non-empty and not longer than `lhs`.
 ///
@@ -234,7 +234,7 @@ pub fn sub_reverse_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigi
 }
 
 /// Subtracts the signed `lhs` from the signed digit `rhs`, assigning `lhs = rhs - lhs` in the
-/// non-empty `lhs` in place and returning a sign digit (0 or -1) that should be appended to `lhs`.
+/// non-empty `lhs` in place and returning the signed carry (0 or -1).
 ///
 /// # Panics
 ///

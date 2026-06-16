@@ -214,8 +214,7 @@ pub fn add_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     add_unsigned_scarry(high, low_carry)
 }
 
-/// Adds the signed `rhs` to the signed `lhs` in place, returning a sign digit (0 or -1) that
-/// should be appended to `lhs`.
+/// Adds the signed `rhs` to the signed `lhs` in place, returning the signed carry (0 or -1).
 ///
 /// `rhs` must be non-empty and not longer than `lhs`.
 ///
@@ -238,13 +237,8 @@ pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     add_unsigned_signed(lhs, rhs) + lhs_extension
 }
 
-/// Adds the unsigned `rhs` to the signed `lhs` in place, returning a digit (-1, 0, or 1) that
-/// should be appended to `lhs`. The `(lhs.len() + 1)`-digit signed number formed by the new
-/// `lhs` digits followed by the returned digit equals the original (signed) `lhs` plus the
-/// (unsigned) `rhs`.
-///
-/// Unlike [`add_signed_signed`], the returned digit can be `1`: a large positive `lhs` plus a
-/// large `rhs` overflows into it.
+/// Adds the unsigned `rhs` to the signed `lhs` in place, returning the signed carry (-1, 0, or
+/// 1).
 ///
 /// `lhs` must be non-empty and `rhs` must not be longer than `lhs`.
 ///
@@ -271,11 +265,9 @@ pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     SignedDigit::from(add_unsigned_unsigned(lhs, rhs)) + lhs_extension
 }
 
-/// Adds the unsigned digit `rhs` to the non-empty signed `lhs` in place, returning a digit
-/// (-1, 0, or 1) that should be appended to `lhs`.
-///
-/// This is the single-digit form of [`add_signed_unsigned`]; like it, the returned digit can
-/// be `1`.
+/// Adds the unsigned digit `rhs` to the non-empty signed `lhs` in place, returning the signed
+/// carry (-1, 0, or 1).
+
 ///
 /// # Panics
 ///
@@ -295,8 +287,8 @@ pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> SignedDigit {
     SignedDigit::from(add_unsigned_digit(lhs, rhs)) + lhs_extension
 }
 
-/// Adds the signed digit `rhs` to the non-empty signed `lhs` in place, returning a sign digit
-/// (0 or -1) that should be appended to `lhs`.
+/// Adds the signed digit `rhs` to the non-empty signed `lhs` in place, returning the signed
+/// carry (0 or -1).
 ///
 /// # Panics
 ///
