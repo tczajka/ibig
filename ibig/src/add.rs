@@ -52,15 +52,6 @@ impl UBig {
     pub fn saturating_add_signed(&self, rhs: &IBig) -> UBig {
         self.checked_add_signed(rhs).unwrap_or(UBig::ZERO)
     }
-
-    /// Constructs a [`UBig`] from `digits` topped by a signed carry `icarry`, returning `None`
-    /// when `icarry` is negative (the value would be negative).
-    pub(crate) fn try_from_digits_icarry(digits: Digits, icarry: IDigit) -> Option<UBig> {
-        // A non-negative `icarry` is the 0-or-1 carry above `digits`; a negative one is not a
-        // valid `bool`, so the conversion fails and `?` returns `None`.
-        let carry = bool::try_from(icarry).ok()?;
-        Some(UBig::from_digits_carry(digits, carry))
-    }
 }
 
 impl IBig {
