@@ -1,11 +1,9 @@
 //! Subtraction.
 
-use crate::ops::{BigBig, BinaryOpRefValBigBig, impl_binary_operator};
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-    Digits,
+use crate::ops::{
+    BigBig, BinaryOpRef, BinaryOpRefBigBig, BinaryOpRefValBigBig, impl_binary_operator,
 };
+use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{Sub, SubAssign};
 use ibig_core::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
@@ -21,14 +19,7 @@ impl UBig {
     /// assert_eq!(UBig::from(3u8).checked_sub(&UBig::from(5u8)), None);
     /// ```
     pub fn checked_sub(&self, rhs: &UBig) -> Option<UBig> {
-        match (self.as_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => a.checked_sub(b).map(UBig::from_digit),
-            // A multi-digit `rhs` is bigger than any single digit.
-            (Small(_), Large(_)) => None,
-            // A multi-digit `lhs` minus a single digit never underflows.
-            (Large(lhs), Small(b)) => Some(SubUBigUBig::apply_ref_digit(lhs, b)),
-            (Large(lhs), Large(rhs)) => Self::checked_sub_large(lhs, rhs),
-        }
+        <CheckedSubUBigUBig as BinaryOpRef>::apply_ref_ref(self, rhs)
     }
 
     /// Subtracts `rhs` from `self`, saturating at zero.
@@ -43,9 +34,31 @@ impl UBig {
     pub fn saturating_sub(&self, rhs: &UBig) -> UBig {
         self.checked_sub(rhs).unwrap_or(UBig::ZERO)
     }
+}
 
-    /// Checked subtraction of multi-digit values.
-    fn checked_sub_large(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
+/// The [`UBig::checked_sub`] operation.
+enum CheckedSubUBigUBig {}
+
+impl BinaryOpRefBigBig for CheckedSubUBigUBig {
+    type Left = UBig;
+    type Right = UBig;
+    type Output = Option<UBig>;
+
+    fn apply_digit_digit(lhs: Digit, rhs: Digit) -> Option<UBig> {
+        lhs.checked_sub(rhs).map(UBig::from_digit)
+    }
+
+    fn apply_digit_ref(_lhs: Digit, _rhs: &[Digit]) -> Option<UBig> {
+        // A multi-digit `rhs` is bigger than any single digit.
+        None
+    }
+
+    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> Option<UBig> {
+        // A multi-digit `lhs` minus a single digit never underflows.
+        Some(SubUBigUBig::apply_ref_digit(lhs, rhs))
+    }
+
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
         // A shorter `lhs` is necessarily smaller, and `ibig_core::sub_unsigned_unsigned` requires
         // `rhs` to not be longer than `lhs`.
         if lhs.len() < rhs.len() {

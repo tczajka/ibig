@@ -1,11 +1,9 @@
 //! Addition.
 
-use crate::ops::{BigBig, CommutativeBinaryOpRefValBigBig, impl_binary_operator};
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-    Digits,
+use crate::ops::{
+    BigBig, BinaryOpRef, BinaryOpRefBigBig, CommutativeBinaryOpRefValBigBig, impl_binary_operator,
 };
+use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{Add, AddAssign};
 use ibig_core::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
@@ -22,12 +20,7 @@ impl UBig {
     /// assert_eq!(UBig::from(5u8).checked_add_signed(&IBig::from(-8)), None);
     /// ```
     pub fn checked_add_signed(&self, rhs: &IBig) -> Option<UBig> {
-        match (self.as_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => UBig::checked_add_signed_digit_sdigit(a, b),
-            (Small(a), Large(rhs)) => UBig::checked_add_signed_digit_ref(a, rhs),
-            (Large(lhs), Small(b)) => UBig::checked_add_signed_ref_sdigit(lhs, b),
-            (Large(lhs), Large(rhs)) => UBig::checked_add_signed_ref_ref(lhs, rhs),
-        }
+        <CheckedAddUBigIBig as BinaryOpRef>::apply_ref_ref(self, rhs)
     }
 
     /// Adds the signed `rhs` to `self`.
@@ -60,12 +53,44 @@ impl UBig {
         self.checked_add_signed(rhs).unwrap_or(UBig::ZERO)
     }
 
-    /// `checked_add_signed` for a single unsigned digit `a` and a single signed digit `b`.
-    fn checked_add_signed_digit_sdigit(a: Digit, b: SignedDigit) -> Option<UBig> {
-        let (sum, overflow) = a.overflowing_add_signed(b);
+    /// Constructs a [`UBig`] from `digits` topped by a signed carry `scarry`, returning `None`
+    /// when `scarry` is negative (the value would be negative).
+    fn try_from_digits_scarry(digits: Digits, scarry: SignedDigit) -> Option<UBig> {
+        // A non-negative `scarry` is the 0-or-1 carry above `digits`; a negative one is not a
+        // valid `bool`, so the conversion fails and `?` returns `None`.
+        let carry = bool::try_from(scarry).ok()?;
+        Some(UBig::from_digits_carry(digits, carry))
+    }
+}
+
+impl IBig {
+    /// Adds the unsigned `rhs` to `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ibig::{IBig, UBig};
+    /// assert_eq!(IBig::from(5).add_unsigned(&UBig::from(3u8)), IBig::from(8));
+    /// assert_eq!(IBig::from(-5).add_unsigned(&UBig::from(3u8)), IBig::from(-2));
+    /// ```
+    pub fn add_unsigned(&self, rhs: &UBig) -> IBig {
+        <AddIBigUBig as BinaryOpRef>::apply_ref_ref(self, rhs)
+    }
+}
+
+/// The [`UBig::checked_add_signed`] operation.
+enum CheckedAddUBigIBig {}
+
+impl BinaryOpRefBigBig for CheckedAddUBigIBig {
+    type Left = UBig;
+    type Right = IBig;
+    type Output = Option<UBig>;
+
+    fn apply_digit_digit(lhs: Digit, rhs: SignedDigit) -> Option<UBig> {
+        let (sum, overflow) = lhs.overflowing_add_signed(rhs);
         if !overflow {
             Some(UBig::from_digit(sum))
-        } else if b.is_negative() {
+        } else if rhs.is_negative() {
             // The result is negative.
             None
         } else {
@@ -74,8 +99,7 @@ impl UBig {
         }
     }
 
-    /// `checked_add_signed` for a single unsigned digit `lhs` and a signed slice `rhs`.
-    fn checked_add_signed_digit_ref(lhs: Digit, rhs: &[Digit]) -> Option<UBig> {
+    fn apply_digit_ref(lhs: Digit, rhs: &[Digit]) -> Option<UBig> {
         // `rhs` (at least two digits) is longer than the single digit. If it is at least two
         // digits longer and negative, its magnitude exceeds `lhs`, so the result is negative.
         if rhs.len() >= 3 && ibig_core::is_negative(rhs) {
@@ -85,20 +109,18 @@ impl UBig {
         let mut digits = Digits::with_capacity(rhs.len() + 1);
         digits.extend_from_slice(rhs);
         let scarry = ibig_core::add_signed_digit(&mut digits, lhs);
-        Self::checked_add_signed_finish(digits, scarry)
+        UBig::try_from_digits_scarry(digits, scarry)
     }
 
-    /// `checked_add_signed` for an unsigned slice `lhs` and a single signed digit `rhs`.
-    fn checked_add_signed_ref_sdigit(lhs: &[Digit], rhs: SignedDigit) -> Option<UBig> {
+    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> Option<UBig> {
         // Clone the unsigned `lhs` (the longer operand) and add the signed digit `rhs`.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
         let scarry = ibig_core::add_unsigned_sdigit(&mut digits, rhs);
-        Self::checked_add_signed_finish(digits, scarry)
+        UBig::try_from_digits_scarry(digits, scarry)
     }
 
-    /// `checked_add_signed` for an unsigned `lhs` and a signed `rhs`, both as digit slices.
-    fn checked_add_signed_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
         let mut digits;
         let scarry;
         if lhs.len() >= rhs.len() {
@@ -117,49 +139,24 @@ impl UBig {
             digits.extend_from_slice(rhs);
             scarry = ibig_core::add_signed_unsigned(&mut digits, lhs);
         }
-        Self::checked_add_signed_finish(digits, scarry)
-    }
-
-    /// Finishes a `checked_add_signed`: `scarry` is the most-significant digit of the result
-    /// (the sum of an unsigned and a signed value), negative exactly when the result is.
-    fn checked_add_signed_finish(mut digits: Digits, scarry: SignedDigit) -> Option<UBig> {
-        if scarry.is_negative() {
-            None
-        } else {
-            // `scarry` is 0 or 1; appending it gives the (non-negative) magnitude.
-            digits.push(scarry.cast_unsigned());
-            Some(UBig::from_digits(digits))
-        }
+        UBig::try_from_digits_scarry(digits, scarry)
     }
 }
 
-impl IBig {
-    /// Adds the unsigned `rhs` to `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use ibig::{IBig, UBig};
-    /// assert_eq!(IBig::from(5).add_unsigned(&UBig::from(3u8)), IBig::from(8));
-    /// assert_eq!(IBig::from(-5).add_unsigned(&UBig::from(3u8)), IBig::from(-2));
-    /// ```
-    pub fn add_unsigned(&self, rhs: &UBig) -> IBig {
-        match (self.as_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => IBig::add_unsigned_sdigit_digit(a, b),
-            (Small(a), Large(rhs)) => IBig::add_unsigned_sdigit_ref(a, rhs),
-            (Large(lhs), Small(b)) => IBig::add_unsigned_ref_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => IBig::add_unsigned_ref_ref(lhs, rhs),
-        }
-    }
+/// The [`IBig::add_unsigned`] operation.
+enum AddIBigUBig {}
 
-    /// `add_unsigned` for a single signed digit `lhs` and a single unsigned digit `rhs`.
-    fn add_unsigned_sdigit_digit(lhs: SignedDigit, rhs: Digit) -> IBig {
+impl BinaryOpRefBigBig for AddIBigUBig {
+    type Left = IBig;
+    type Right = UBig;
+    type Output = IBig;
+
+    fn apply_digit_digit(lhs: SignedDigit, rhs: Digit) -> IBig {
         let (sum, carry) = lhs.cast_unsigned().overflowing_add(rhs);
         IBig::from_two_digits(sum, SignedDigit::from(carry) + sign_extension_sdigit(lhs))
     }
 
-    /// `add_unsigned` for a single signed digit `lhs` and an unsigned slice `rhs`.
-    fn add_unsigned_sdigit_ref(lhs: SignedDigit, rhs: &[Digit]) -> IBig {
+    fn apply_digit_ref(lhs: SignedDigit, rhs: &[Digit]) -> IBig {
         // Clone the unsigned `rhs` (the longer operand) and add the signed digit `lhs`.
         let mut digits = Digits::with_capacity(rhs.len() + 1);
         digits.extend_from_slice(rhs);
@@ -167,8 +164,7 @@ impl IBig {
         IBig::from_digits_scarry(digits, scarry)
     }
 
-    /// `add_unsigned` for a signed slice `lhs` and a single unsigned digit `rhs`.
-    fn add_unsigned_ref_digit(lhs: &[Digit], rhs: Digit) -> IBig {
+    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> IBig {
         // Clone the signed `lhs` (the longer operand) and add the unsigned digit `rhs`.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
@@ -176,8 +172,7 @@ impl IBig {
         IBig::from_digits_scarry(digits, scarry)
     }
 
-    /// `add_unsigned` for a signed `lhs` and an unsigned `rhs`, both as digit slices.
-    fn add_unsigned_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
         let mut digits;
         let scarry;
         if lhs.len() >= rhs.len() {
