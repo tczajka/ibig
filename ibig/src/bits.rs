@@ -4,11 +4,7 @@ use crate::ops::{
     BinaryOpRefBigCopy, BinaryOpRefCopy, BinaryOpValBigCopy, BinaryOpValCopy, UnaryOpRef,
     UnaryOpRefBig,
 };
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-    Digits,
-};
+use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::mem;
 use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, SignedDigit};
@@ -234,10 +230,7 @@ impl IBig {
     /// assert_eq!(IBig::from(-4i8).checked_ilog2(), None);
     /// ```
     pub fn checked_ilog2(&self) -> Option<usize> {
-        match self.as_digits() {
-            Small(digit) => digit.checked_ilog2().map(|x| x.try_into().unwrap()),
-            Large(digits) => IBig::checked_ilog2_ref(digits),
-        }
+        <CheckedIlog2IBig as UnaryOpRef>::apply_ref(self)
     }
 
     /// Returns the number of trailing zero bits of the two's complement representation.
@@ -274,18 +267,6 @@ impl IBig {
     /// ```
     pub fn trailing_ones(&self) -> usize {
         <TrailingOnesIBig as UnaryOpRef>::apply_ref(self)
-    }
-
-    /// [`IBig::checked_ilog2`] for a borrowed slice.
-    fn checked_ilog2_ref(digits: &[Digit]) -> Option<usize> {
-        if ibig_core::is_negative(digits) {
-            None
-        } else {
-            // A multi-digit non-negative value is nonzero, so it has a highest set bit.
-            let highest = ibig_core::highest_one(digits).unwrap();
-            // This will not overflow because our numbers are never longer than `usize::MAX` bits.
-            Some(highest.try_into().unwrap())
-        }
     }
 }
 
@@ -525,6 +506,29 @@ impl BinaryOpValBigCopy for SetBitIBig {
         }
         ibig_core::set_bit(&mut digits, index, value);
         IBig::from_digits(digits)
+    }
+}
+
+/// The [`IBig::checked_ilog2`] operation.
+enum CheckedIlog2IBig {}
+
+impl UnaryOpRefBig for CheckedIlog2IBig {
+    type Operand = IBig;
+    type Output = Option<usize>;
+
+    fn apply_digit(operand: SignedDigit) -> Option<usize> {
+        operand.checked_ilog2().map(|x| x.try_into().unwrap())
+    }
+
+    fn apply_ref(operand: &[Digit]) -> Option<usize> {
+        if ibig_core::is_negative(operand) {
+            None
+        } else {
+            // A multi-digit non-negative value is nonzero, so it has a highest set bit.
+            let highest = ibig_core::highest_one(operand).unwrap();
+            // This will not overflow because our numbers are never longer than `usize::MAX` bits.
+            Some(highest.try_into().unwrap())
+        }
     }
 }
 

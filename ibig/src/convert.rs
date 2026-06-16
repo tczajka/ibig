@@ -1,5 +1,6 @@
 //! Conversions to and from [`UBig`] and [`IBig`].
 
+use crate::ops::{UnaryOpRefVal, UnaryOpRefValBig};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -441,18 +442,45 @@ impl TryFrom<&IBig> for bool {
 
 try_from_big_value!(bool, IBig);
 
+/// The fallible [`IBig`]-to-[`UBig`] conversion.
+enum IBigToUBig {}
+
+impl UnaryOpRefValBig for IBigToUBig {
+    type Operand = IBig;
+    type Output = Result<UBig, TryFromBigError>;
+
+    fn apply_digit(digit: SignedDigit) -> Result<UBig, TryFromBigError> {
+        if digit.is_negative() {
+            Err(TryFromBigError)
+        } else {
+            Ok(UBig::from_digit(digit.cast_unsigned()))
+        }
+    }
+
+    fn apply_ref(digits: &[Digit]) -> Result<UBig, TryFromBigError> {
+        if ibig_core::is_negative(digits) {
+            Err(TryFromBigError)
+        } else {
+            // A non-negative two's complement value's digits are its unsigned magnitude.
+            Ok(UBig::from_digits(Digits::from_slice(digits)))
+        }
+    }
+
+    fn apply_val(digits: Digits) -> Result<UBig, TryFromBigError> {
+        if ibig_core::is_negative(&digits) {
+            Err(TryFromBigError)
+        } else {
+            // A non-negative two's complement value's digits are its unsigned magnitude.
+            Ok(UBig::from_digits(digits))
+        }
+    }
+}
+
 impl TryFrom<IBig> for UBig {
     type Error = TryFromBigError;
 
     fn try_from(value: IBig) -> Result<UBig, TryFromBigError> {
-        if value.is_negative() {
-            return Err(TryFromBigError);
-        }
-        // A non-negative two's complement value's digits are its unsigned magnitude.
-        match value.into_digits() {
-            Small(digit) => Ok(UBig::from_digit(digit.cast_unsigned())),
-            Large(digits) => Ok(UBig::from_digits(digits)),
-        }
+        <IBigToUBig as UnaryOpRefVal>::apply_val(value)
     }
 }
 
@@ -460,46 +488,23 @@ impl TryFrom<&IBig> for UBig {
     type Error = TryFromBigError;
 
     fn try_from(value: &IBig) -> Result<UBig, TryFromBigError> {
-        // Fast path to avoid cloning.
-        if value.is_negative() {
-            return Err(TryFromBigError);
-        }
-        UBig::try_from(value.clone())
+        <IBigToUBig as UnaryOpRefVal>::apply_ref(value)
     }
 }
 
-impl From<UBig> for IBig {
-    fn from(value: UBig) -> IBig {
-        match value.into_digits() {
-            // A zero high digit keeps the value non-negative.
-            Small(digit) => IBig::from_two_digits(digit, SignedDigit::ZERO),
-            Large(digits) => IBig::from_ubig_val(digits),
-        }
-    }
-}
+/// The [`UBig`]-to-[`IBig`] conversion.
+enum UBigToIBig {}
 
-impl From<&UBig> for IBig {
-    fn from(value: &UBig) -> IBig {
-        match value.as_digits() {
-            Small(digit) => IBig::from_two_digits(digit, SignedDigit::ZERO),
-            Large(digits) => IBig::from_ubig_ref(digits),
-        }
-    }
-}
+impl UnaryOpRefValBig for UBigToIBig {
+    type Operand = UBig;
+    type Output = IBig;
 
-impl IBig {
-    /// [`From<UBig>`] for an owned buffer of unsigned digits.
-    fn from_ubig_val(mut digits: Digits) -> IBig {
-        // The unsigned digits are non-negative. If the most-significant digit's sign bit
-        // is set, the two's complement reading would be negative, so append a zero digit.
-        if ibig_core::is_negative(&digits) {
-            digits.push(Digit::ZERO);
-        }
-        IBig::from_digits(digits)
+    fn apply_digit(digit: Digit) -> IBig {
+        // A zero high digit keeps the value non-negative.
+        IBig::from_two_digits(digit, SignedDigit::ZERO)
     }
 
-    /// [`From<&UBig>`] for a borrowed slice of unsigned digits.
-    fn from_ubig_ref(digits: &[Digit]) -> IBig {
+    fn apply_ref(digits: &[Digit]) -> IBig {
         // If the top digit's sign bit is set, a zero digit is appended to keep the
         // two's complement reading positive; clone with room for it.
         let negative = ibig_core::is_negative(digits);
@@ -509,5 +514,24 @@ impl IBig {
             new_digits.push(Digit::ZERO);
         }
         IBig::from_digits(new_digits)
+    }
+
+    fn apply_val(mut digits: Digits) -> IBig {
+        if ibig_core::is_negative(&digits) {
+            digits.push(Digit::ZERO);
+        }
+        IBig::from_digits(digits)
+    }
+}
+
+impl From<UBig> for IBig {
+    fn from(value: UBig) -> IBig {
+        <UBigToIBig as UnaryOpRefVal>::apply_val(value)
+    }
+}
+
+impl From<&UBig> for IBig {
+    fn from(value: &UBig) -> IBig {
+        <UBigToIBig as UnaryOpRefVal>::apply_ref(value)
     }
 }
