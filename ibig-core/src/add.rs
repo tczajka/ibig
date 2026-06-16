@@ -267,7 +267,6 @@ pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 
 /// Adds the unsigned digit `rhs` to the non-empty signed `lhs` in place, returning the signed
 /// carry (-1, 0, or 1).
-
 ///
 /// # Panics
 ///
