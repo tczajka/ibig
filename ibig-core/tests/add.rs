@@ -1,9 +1,9 @@
 //! Integration tests for addition.
 
 use ibig_core::{
-    Digit, IDigit, add_signed_digit, add_signed_idigit, add_signed_signed, add_signed_unsigned,
-    add_unsigned_1, add_unsigned_carry, add_unsigned_digit, add_unsigned_icarry,
-    add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
+    Digit, IDigit, add_digit_idigit, add_signed_digit, add_signed_idigit, add_signed_signed,
+    add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
+    add_unsigned_icarry, add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
     add_unsigned_unsigned_same_len, extend_signed,
 };
 use proptest::collection::vec;
@@ -321,6 +321,33 @@ fn add_unsigned_idigit_empty() {
 }
 
 #[test]
+fn add_digit_idigit_basic() {
+    // 5 + -3 == 2, no carry.
+    assert_eq!(
+        add_digit_idigit(digit(5), idigit(-3)),
+        (digit(2), idigit(0))
+    );
+
+    // 0 + -1 == -1: the low digit wraps and the carry is -1.
+    assert_eq!(
+        add_digit_idigit(Digit::ZERO, idigit(-1)),
+        (Digit::MAX, idigit(-1))
+    );
+
+    // A positive overflow into a +1 carry: MAX + 1 == 2^bits.
+    assert_eq!(
+        add_digit_idigit(Digit::MAX, idigit(1)),
+        (Digit::ZERO, idigit(1))
+    );
+
+    // The largest positive idigit added to MAX still carries only +1.
+    assert_eq!(
+        add_digit_idigit(Digit::MAX, IDigit::MAX),
+        (IDigit::MAX.cast_unsigned() - digit(1), idigit(1))
+    );
+}
+
+#[test]
 fn add_signed_digit_basic() {
     // -1 + 5 == 4.
     let mut a = [Digit::MAX];
@@ -489,6 +516,16 @@ proptest! {
         let high_slice = add_unsigned_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
+    }
+
+    // `add_digit_idigit(a, d)` agrees with `add_unsigned_idigit` on the one-digit slice `[a]`.
+    #[test]
+    fn add_digit_idigit_matches_unsigned_idigit(a: Digit, d: IDigit) {
+        let (low, carry) = add_digit_idigit(a, d);
+        let mut slice = [a];
+        let slice_carry = add_unsigned_idigit(&mut slice, d);
+        prop_assert_eq!(low, slice[0]);
+        prop_assert_eq!(carry, slice_carry);
     }
 
     // `add_signed_digit` agrees with `add_signed_unsigned` of a one-digit slice.

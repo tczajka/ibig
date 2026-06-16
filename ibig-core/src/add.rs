@@ -214,6 +214,43 @@ pub fn add_unsigned_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     add_unsigned_icarry(high, low_carry)
 }
 
+/// Adds the signed digit `rhs` to the unsigned digit `lhs`, returning the low digit and the
+/// signed carry (-1, 0, or 1) above it.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, add_digit_idigit};
+/// // 5 + -3 == 2, no carry.
+/// assert_eq!(
+///     add_digit_idigit(Digit::from(5u8), IDigit::from(-3i8)),
+///     (Digit::from(2u8), IDigit::ZERO)
+/// );
+///
+/// // 0 + -1 == -1: the low digit wraps and the carry is -1.
+/// assert_eq!(
+///     add_digit_idigit(Digit::ZERO, IDigit::from(-1i8)),
+///     (Digit::MAX, IDigit::from(-1i8))
+/// );
+///
+/// // (2^bits - 1) + 1 carries out into a +1.
+/// assert_eq!(
+///     add_digit_idigit(Digit::MAX, IDigit::from(1i8)),
+///     (Digit::ZERO, IDigit::from(1i8))
+/// );
+/// ```
+pub fn add_digit_idigit(lhs: Digit, rhs: IDigit) -> (Digit, IDigit) {
+    let (low, overflow) = lhs.overflowing_add_signed(rhs);
+    let carry = if !overflow {
+        IDigit::ZERO
+    } else if rhs.is_negative() {
+        IDigit::from(-1i8)
+    } else {
+        IDigit::from(1i8)
+    };
+    (low, carry)
+}
+
 /// Adds the signed `rhs` to the signed `lhs` in place, returning the signed carry (0 or -1).
 ///
 /// `rhs` must be non-empty and not longer than `lhs`.

@@ -151,15 +151,12 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
     type Output = Option<UBig>;
 
     fn apply_digit_digit(lhs: Digit, rhs: IDigit) -> Option<UBig> {
-        let (sum, overflow) = lhs.overflowing_add_signed(rhs);
-        if !overflow {
-            Some(UBig::from_digit(sum))
-        } else if rhs.is_negative() {
+        let (low, icarry) = ibig_core::add_digit_idigit(lhs, rhs);
+        if icarry.is_negative() {
             // The result is negative.
             None
         } else {
-            // The sum overflowed a single digit into a most-significant `1`.
-            Some(UBig::from_two_digits(sum, Digit::from(1u8)))
+            Some(UBig::from_two_digits(low, icarry.cast_unsigned()))
         }
     }
 
@@ -216,8 +213,8 @@ impl BinaryOpRefBigBig for AddIBigUBig {
     type Output = IBig;
 
     fn apply_digit_digit(lhs: IDigit, rhs: Digit) -> IBig {
-        let (sum, carry) = lhs.cast_unsigned().overflowing_add(rhs);
-        IBig::from_two_digits(sum, IDigit::from(carry) + sign_extension_idigit(lhs))
+        let (low, icarry) = ibig_core::add_digit_idigit(rhs, lhs);
+        IBig::from_two_digits(low, icarry)
     }
 
     fn apply_digit_ref(lhs: IDigit, rhs: &[Digit]) -> IBig {
