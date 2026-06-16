@@ -4,7 +4,7 @@ use crate::ops::{UnaryOpRefVal, UnaryOpRefValBig};
 use crate::repr::Digits;
 use crate::{IBig, TryFromBigError, UBig};
 use core::num::TryFromIntError;
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 
 impl UBig {
     /// Constructs from a `u8` in a `const` context.
@@ -47,21 +47,21 @@ impl IBig {
     ///
     /// Outside of `const` contexts, use [`From`].
     pub const fn const_from_i8(value: i8) -> IBig {
-        IBig::const_from_digit(SignedDigit::from_i8(value))
+        IBig::const_from_digit(IDigit::from_i8(value))
     }
 
     /// Constructs from an `i16` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
     pub const fn const_from_i16(value: i16) -> IBig {
-        IBig::const_from_digit(SignedDigit::from_i16(value))
+        IBig::const_from_digit(IDigit::from_i16(value))
     }
 
     /// Constructs from an `i32` in a `const` context.
     ///
     /// Outside of `const` contexts, use [`From`].
     pub const fn const_from_i32(value: i32) -> IBig {
-        match SignedDigit::try_from_i32(value) {
+        match IDigit::try_from_i32(value) {
             Some(digit) => IBig::const_from_digit(digit),
             None => IBig::const_from_le_bytes(&value.to_le_bytes()),
         }
@@ -71,7 +71,7 @@ impl IBig {
     ///
     /// Outside of `const` contexts, use [`From`].
     pub const fn const_from_i64(value: i64) -> IBig {
-        match SignedDigit::try_from_i64(value) {
+        match IDigit::try_from_i64(value) {
             Some(digit) => IBig::const_from_digit(digit),
             None => IBig::const_from_le_bytes(&value.to_le_bytes()),
         }
@@ -308,7 +308,7 @@ macro_rules! ibig_from_signed {
     ($t:ty) => {
         impl From<$t> for IBig {
             fn from(value: $t) -> IBig {
-                match SignedDigit::try_from(value) {
+                match IDigit::try_from(value) {
                     Ok(digit) => IBig::from_digit(digit),
                     Err(_) => IBig::from_le_bytes(&value.to_le_bytes()),
                 }
@@ -345,7 +345,7 @@ ibig_from_unsigned!(usize);
 /// Converts a `bool`: `false` to zero and `true` to one.
 impl From<bool> for IBig {
     fn from(value: bool) -> IBig {
-        IBig::from_digit(SignedDigit::from(value))
+        IBig::from_digit(IDigit::from(value))
     }
 }
 
@@ -359,7 +359,7 @@ macro_rules! try_from_ibig_signed {
             type Operand = IBig;
             type Output = Result<$t, TryFromBigError>;
 
-            fn apply_digit(digit: SignedDigit) -> Result<$t, TryFromBigError> {
+            fn apply_digit(digit: IDigit) -> Result<$t, TryFromBigError> {
                 <$t>::try_from(digit).map_err(|_| TryFromBigError)
             }
 
@@ -437,7 +437,7 @@ macro_rules! try_from_ibig_unsigned {
             type Operand = IBig;
             type Output = Result<$t, TryFromBigError>;
 
-            fn apply_digit(digit: SignedDigit) -> Result<$t, TryFromBigError> {
+            fn apply_digit(digit: IDigit) -> Result<$t, TryFromBigError> {
                 <$t>::try_from(digit).map_err(|_| TryFromBigError)
             }
 
@@ -521,7 +521,7 @@ impl UnaryOpRefValBig for IBigToBool {
     type Operand = IBig;
     type Output = Result<bool, TryFromBigError>;
 
-    fn apply_digit(operand: SignedDigit) -> Result<bool, TryFromBigError> {
+    fn apply_digit(operand: IDigit) -> Result<bool, TryFromBigError> {
         operand.try_into().map_err(|_| TryFromBigError)
     }
 
@@ -559,7 +559,7 @@ impl UnaryOpRefValBig for IBigToUBig {
     type Operand = IBig;
     type Output = Result<UBig, TryFromBigError>;
 
-    fn apply_digit(digit: SignedDigit) -> Result<UBig, TryFromBigError> {
+    fn apply_digit(digit: IDigit) -> Result<UBig, TryFromBigError> {
         if digit.is_negative() {
             Err(TryFromBigError)
         } else {
@@ -611,7 +611,7 @@ impl UnaryOpRefValBig for UBigToIBig {
 
     fn apply_digit(digit: Digit) -> IBig {
         // A zero high digit keeps the value non-negative.
-        IBig::from_two_digits(digit, SignedDigit::ZERO)
+        IBig::from_two_digits(digit, IDigit::ZERO)
     }
 
     fn apply_ref(digits: &[Digit]) -> IBig {

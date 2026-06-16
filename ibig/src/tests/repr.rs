@@ -6,15 +6,15 @@ use crate::repr::{
     Digits,
 };
 use crate::{IBig, UBig};
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 use smallvec::{SmallVec, smallvec};
 
 const fn digit(n: u16) -> Digit {
     Digit::from_u16(n)
 }
 
-const fn signed(n: i16) -> SignedDigit {
-    SignedDigit::from_i16(n)
+const fn idigit(n: i16) -> IDigit {
+    IDigit::from_i16(n)
 }
 
 #[test]
@@ -30,15 +30,15 @@ fn ubig_from_digit() {
 #[test]
 fn ibig_from_digit() {
     // A single signed digit is stored inline, as its two's complement bit pattern.
-    assert_eq!(IBig::from_digit(signed(0)).into_digits(), Small(signed(0)));
+    assert_eq!(IBig::from_digit(idigit(0)).into_digits(), Small(idigit(0)));
     assert_eq!(
-        IBig::from_digit(signed(42)).into_digits(),
-        Small(signed(42))
+        IBig::from_digit(idigit(42)).into_digits(),
+        Small(idigit(42))
     );
     // -1 is all-ones in two's complement.
     assert_eq!(
-        IBig::from_digit(signed(-1)).into_digits(),
-        Small(signed(-1))
+        IBig::from_digit(idigit(-1)).into_digits(),
+        Small(idigit(-1))
     );
 }
 
@@ -68,25 +68,25 @@ fn ubig_from_two_digits() {
 fn ibig_from_two_digits() {
     // A high digit that is a redundant sign extension of the low digit is dropped.
     assert_eq!(
-        IBig::from_two_digits(digit(5), signed(0)).into_digits(),
-        Small(signed(5))
+        IBig::from_two_digits(digit(5), idigit(0)).into_digits(),
+        Small(idigit(5))
     );
     assert_eq!(
-        IBig::from_two_digits(Digit::MAX, signed(-1)).into_digits(),
-        Small(signed(-1))
+        IBig::from_two_digits(Digit::MAX, idigit(-1)).into_digits(),
+        Small(idigit(-1))
     );
     // A high digit needed to carry the sign is kept.
     assert_eq!(
-        IBig::from_two_digits(Digit::MAX, signed(0)).into_digits(),
+        IBig::from_two_digits(Digit::MAX, idigit(0)).into_digits(),
         Large(smallvec![Digit::MAX, digit(0)])
     );
     assert_eq!(
-        IBig::from_two_digits(digit(0), signed(-1)).into_digits(),
+        IBig::from_two_digits(digit(0), idigit(-1)).into_digits(),
         Large(smallvec![digit(0), Digit::MAX])
     );
     // A high digit with significant bits of its own is kept.
     assert_eq!(
-        IBig::from_two_digits(digit(5), signed(2)).into_digits(),
+        IBig::from_two_digits(digit(5), idigit(2)).into_digits(),
         Large(smallvec![digit(5), digit(2)])
     );
 }
@@ -135,26 +135,26 @@ fn ubig_const_from_digits_panics_when_too_long() {
 fn ibig_const_from_digits() {
     // Usable in a `const` context.
     const FIVE: IBig = IBig::const_from_digits(&[digit(5)]);
-    assert_eq!(FIVE.into_digits(), Small(signed(5)));
+    assert_eq!(FIVE.into_digits(), Small(idigit(5)));
 
     // A single two's complement digit is kept as-is, positive or negative.
     assert_eq!(
         IBig::const_from_digits(&[digit(42)]).into_digits(),
-        Small(signed(42))
+        Small(idigit(42))
     );
     assert_eq!(
         IBig::const_from_digits(&[Digit::MAX]).into_digits(),
-        Small(signed(-1))
+        Small(idigit(-1))
     );
     // A redundant zero sign-extension above a non-negative digit is stripped.
     assert_eq!(
         IBig::const_from_digits(&[digit(5), digit(0)]).into_digits(),
-        Small(signed(5))
+        Small(idigit(5))
     );
     // An all-ones sign-extension above a negative digit is stripped.
     assert_eq!(
         IBig::const_from_digits(&[Digit::MAX, Digit::MAX]).into_digits(),
-        Small(signed(-1))
+        Small(idigit(-1))
     );
     // A leading zero digit needed to keep `2^W - 1` positive is preserved.
     assert_eq!(
@@ -243,17 +243,17 @@ fn ubig_from_digits_no_need_to_shrink() {
 fn ibig_from_digits_normalizes() {
     assert_eq!(
         IBig::from_digits(smallvec![digit(0), digit(0)]).into_digits(),
-        Small(signed(0))
+        Small(idigit(0))
     );
     // A redundant zero sign-extension above a non-negative digit is stripped.
     assert_eq!(
         IBig::from_digits(smallvec![digit(5), digit(0), digit(0)]).into_digits(),
-        Small(signed(5))
+        Small(idigit(5))
     );
     // For a negative value the sign-extension digits are all-ones, and are stripped.
     assert_eq!(
         IBig::from_digits(smallvec![Digit::MAX, Digit::MAX, Digit::MAX]).into_digits(),
-        Small(signed(-1))
+        Small(idigit(-1))
     );
 }
 
@@ -318,7 +318,7 @@ fn ibig_from_digits_inlines_small() {
     digits.push(digit(5));
     digits.push(digit(0));
     assert!(digits.spilled());
-    assert_eq!(IBig::from_digits(digits).into_digits(), Small(signed(5)));
+    assert_eq!(IBig::from_digits(digits).into_digits(), Small(idigit(5)));
 }
 
 #[test]
@@ -339,8 +339,8 @@ fn ubig_as_digits() {
 #[test]
 fn ibig_as_digits() {
     // A single signed digit is reported as `Small`.
-    assert_eq!(IBig::from_digit(signed(0)).as_digits(), Small(signed(0)));
-    assert_eq!(IBig::from_digit(signed(-1)).as_digits(), Small(signed(-1)));
+    assert_eq!(IBig::from_digit(idigit(0)).as_digits(), Small(idigit(0)));
+    assert_eq!(IBig::from_digit(idigit(-1)).as_digits(), Small(idigit(-1)));
     // A value needing two digits does not fit in a single signed digit, so it is `Large`.
     assert_eq!(
         IBig::from_digits(smallvec![Digit::MAX, digit(0)]).as_digits(),

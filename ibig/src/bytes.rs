@@ -4,7 +4,7 @@ use crate::ops::{UnaryOpRef, UnaryOpRefBig};
 use crate::repr::{Digits, INLINE_DIGITS};
 use crate::{IBig, UBig};
 use alloc::{vec, vec::Vec};
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 
 impl UBig {
     /// Returns the little-endian (least-significant-first) byte representation, with no
@@ -208,7 +208,7 @@ impl UnaryOpRefBig for ToLeBytesIBig {
     type Operand = IBig;
     type Output = Vec<u8>;
 
-    fn apply_digit(operand: SignedDigit) -> Vec<u8> {
+    fn apply_digit(operand: IDigit) -> Vec<u8> {
         let mut bytes = operand.to_le_bytes().to_vec();
         bytes.truncate(ibig_core::min_len_bytes_signed(&bytes));
         bytes

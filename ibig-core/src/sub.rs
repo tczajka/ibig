@@ -1,7 +1,7 @@
 //! Subtraction.
 
-use crate::add::add_unsigned_scarry;
-use crate::{Digit, SignedDigit, not, sign_extension, sign_extension_sdigit};
+use crate::add::add_unsigned_icarry;
+use crate::{Digit, IDigit, not, sign_extension, sign_extension_idigit};
 
 /// Subtracts `rhs` from `lhs` in place, returning the borrow out of the most-significant digit.
 /// The slices must have the same length.
@@ -131,23 +131,23 @@ pub fn sub_unsigned_1(lhs: &mut [Digit]) -> bool {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_unsigned_signed};
+/// # use ibig_core::{Digit, IDigit, sub_unsigned_signed};
 /// // 5 - -1 == 6, no carry.
 /// let mut a = [Digit::from(5u8)];
-/// assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), SignedDigit::ZERO);
+/// assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(6u8)]);
 ///
 /// // 0 - 1 == -1: the result is negative, so the carry is -1.
 /// let mut a = [Digit::ZERO];
-/// assert_eq!(sub_unsigned_signed(&mut a, &[Digit::from(1u8)]), SignedDigit::from(-1i8));
+/// assert_eq!(sub_unsigned_signed(&mut a, &[Digit::from(1u8)]), IDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-pub fn sub_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn sub_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let rhs_extension = sign_extension(rhs);
     let (low, high) = lhs.split_at_mut(rhs.len());
     let low_borrow = sub_unsigned_unsigned_same_len(low, rhs);
-    let low_carry = -SignedDigit::from(low_borrow) - rhs_extension; // -1..=1
-    add_unsigned_scarry(high, low_carry)
+    let low_carry = -IDigit::from(low_borrow) - rhs_extension; // -1..=1
+    add_unsigned_icarry(high, low_carry)
 }
 
 /// Subtracts the signed digit `rhs` from the non-empty unsigned `lhs` in place, returning the
@@ -162,23 +162,23 @@ pub fn sub_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_unsigned_sdigit};
+/// # use ibig_core::{Digit, IDigit, sub_unsigned_idigit};
 /// // 5 - -3 == 8
 /// let mut a = [Digit::from(5u8)];
-/// assert_eq!(sub_unsigned_sdigit(&mut a, SignedDigit::from(-3i8)), SignedDigit::ZERO);
+/// assert_eq!(sub_unsigned_idigit(&mut a, IDigit::from(-3i8)), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(8u8)]);
 ///
 /// // 0 - 1 == -1, a borrow out of the most-significant digit.
 /// let mut a = [Digit::ZERO];
-/// assert_eq!(sub_unsigned_sdigit(&mut a, SignedDigit::from(1i8)), SignedDigit::from(-1i8));
+/// assert_eq!(sub_unsigned_idigit(&mut a, IDigit::from(1i8)), IDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-pub fn sub_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn sub_unsigned_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (diff, borrow) = low.overflowing_sub(rhs.cast_unsigned());
     *low = diff;
-    let low_carry = -SignedDigit::from(borrow) - sign_extension_sdigit(rhs); // -1..=1
-    add_unsigned_scarry(high, low_carry)
+    let low_carry = -IDigit::from(borrow) - sign_extension_idigit(rhs); // -1..=1
+    add_unsigned_icarry(high, low_carry)
 }
 
 /// Subtracts the signed `rhs` from the signed `lhs` in place, returning the signed carry
@@ -193,14 +193,14 @@ pub fn sub_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_signed_signed};
+/// # use ibig_core::{Digit, IDigit, sub_signed_signed};
 /// // 3 - 5 == -2
 /// let mut a = [Digit::from(3u8)];
 /// let high = sub_signed_signed(&mut a, &[Digit::from(5u8)]);
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
-/// assert_eq!(high, SignedDigit::from(-1i8));
+/// assert_eq!(high, IDigit::from(-1i8));
 /// ```
-pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let lhs_extension = sign_extension(lhs);
     sub_unsigned_signed(lhs, rhs) + lhs_extension
 }
@@ -215,16 +215,16 @@ pub fn sub_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_signed_sdigit};
+/// # use ibig_core::{Digit, IDigit, sub_signed_idigit};
 /// // 3 - 5 == -2
 /// let mut a = [Digit::from(3u8)];
-/// let high = sub_signed_sdigit(&mut a, SignedDigit::from(5i8));
+/// let high = sub_signed_idigit(&mut a, IDigit::from(5i8));
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
-/// assert_eq!(high, SignedDigit::from(-1i8));
+/// assert_eq!(high, IDigit::from(-1i8));
 /// ```
-pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn sub_signed_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let lhs_extension = sign_extension(lhs);
-    sub_unsigned_sdigit(lhs, rhs) + lhs_extension
+    sub_unsigned_idigit(lhs, rhs) + lhs_extension
 }
 
 /// Assigns `lhs = rhs - lhs` in place, returning the borrow out of the most-significant digit.
@@ -267,23 +267,23 @@ pub fn sub_rev_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> b
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_rev_signed_signed};
+/// # use ibig_core::{Digit, IDigit, sub_rev_signed_signed};
 /// // 5 - 3 == 2
 /// let mut a = [Digit::from(3u8)];
 /// let high = sub_rev_signed_signed(&mut a, &[Digit::from(5u8)]);
 /// assert_eq!(a, [Digit::from(2u8)]);
-/// assert_eq!(high, SignedDigit::ZERO);
+/// assert_eq!(high, IDigit::ZERO);
 /// ```
-pub fn sub_rev_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn sub_rev_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension(rhs);
     let (low, high) = lhs.split_at_mut(rhs.len());
     let low_borrow = sub_rev_unsigned_unsigned_same_len(low, rhs);
-    let low_carry = rhs_extension - SignedDigit::from(low_borrow); // -2..=0
+    let low_carry = rhs_extension - IDigit::from(low_borrow); // -2..=0
     // negate the top part: -x = !x + 1
     not(high);
-    let low_carry = low_carry + SignedDigit::from(1u8); // -1..=1
-    let high_carry = add_unsigned_scarry(high, low_carry);
+    let low_carry = low_carry + IDigit::from(1u8); // -1..=1
+    let high_carry = add_unsigned_icarry(high, low_carry);
     !lhs_extension + high_carry
 }
 
@@ -297,23 +297,23 @@ pub fn sub_rev_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_rev_signed_sdigit};
+/// # use ibig_core::{Digit, IDigit, sub_rev_signed_idigit};
 /// // 5 - 3 == 2
 /// let mut a = [Digit::from(3u8)];
-/// let high = sub_rev_signed_sdigit(&mut a, SignedDigit::from(5i8));
+/// let high = sub_rev_signed_idigit(&mut a, IDigit::from(5i8));
 /// assert_eq!(a, [Digit::from(2u8)]);
-/// assert_eq!(high, SignedDigit::ZERO);
+/// assert_eq!(high, IDigit::ZERO);
 /// ```
-pub fn sub_rev_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn sub_rev_signed_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let lhs_extension = sign_extension(lhs);
-    let rhs_extension = sign_extension_sdigit(rhs);
+    let rhs_extension = sign_extension_idigit(rhs);
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (diff, low_borrow) = rhs.cast_unsigned().overflowing_sub(*low);
     *low = diff;
-    let low_carry = rhs_extension - SignedDigit::from(low_borrow); // -2..=0
+    let low_carry = rhs_extension - IDigit::from(low_borrow); // -2..=0
     // negate the top part: -x = !x + 1
     not(high);
-    let low_carry = low_carry + SignedDigit::from(1u8); // -1..=1
-    let high_carry = add_unsigned_scarry(high, low_carry);
+    let low_carry = low_carry + IDigit::from(1u8); // -1..=1
+    let high_carry = add_unsigned_icarry(high, low_carry);
     !lhs_extension + high_carry
 }

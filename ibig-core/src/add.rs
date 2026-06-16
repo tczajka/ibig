@@ -1,7 +1,7 @@
 //! Addition.
 
 use crate::sub::sub_unsigned_1;
-use crate::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
+use crate::{Digit, IDigit, sign_extension, sign_extension_idigit};
 
 /// Adds `rhs` to `lhs` in place, returning the carry out of the most-significant digit.
 /// The slices must have the same length.
@@ -129,24 +129,24 @@ pub fn add_unsigned_carry(lhs: &mut [Digit], carry: bool) -> bool {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_unsigned_scarry};
+/// # use ibig_core::{Digit, IDigit, add_unsigned_icarry};
 /// // Adding -1 borrows through the low zero digit.
 /// let mut a = [Digit::ZERO, Digit::from(1u8)];
-/// assert_eq!(add_unsigned_scarry(&mut a, SignedDigit::from(-1i8)), SignedDigit::ZERO);
+/// assert_eq!(add_unsigned_icarry(&mut a, IDigit::from(-1i8)), IDigit::ZERO);
 /// assert_eq!(a, [Digit::MAX, Digit::ZERO]);
 ///
 /// // Adding +1 to all ones carries out.
 /// let mut a = [Digit::MAX];
-/// assert_eq!(add_unsigned_scarry(&mut a, SignedDigit::from(1i8)), SignedDigit::from(1i8));
+/// assert_eq!(add_unsigned_icarry(&mut a, IDigit::from(1i8)), IDigit::from(1i8));
 /// assert_eq!(a, [Digit::ZERO]);
 /// ```
-pub fn add_unsigned_scarry(lhs: &mut [Digit], carry: SignedDigit) -> SignedDigit {
-    if carry == SignedDigit::from(-1i8) {
-        -SignedDigit::from(sub_unsigned_1(lhs))
-    } else if carry == SignedDigit::ZERO {
-        SignedDigit::ZERO
-    } else if carry == SignedDigit::from(1i8) {
-        SignedDigit::from(add_unsigned_1(lhs))
+pub fn add_unsigned_icarry(lhs: &mut [Digit], carry: IDigit) -> IDigit {
+    if carry == IDigit::from(-1i8) {
+        -IDigit::from(sub_unsigned_1(lhs))
+    } else if carry == IDigit::ZERO {
+        IDigit::ZERO
+    } else if carry == IDigit::from(1i8) {
+        IDigit::from(add_unsigned_1(lhs))
     } else {
         panic!("invalid signed carry: {carry}")
     }
@@ -165,22 +165,22 @@ pub fn add_unsigned_scarry(lhs: &mut [Digit], carry: SignedDigit) -> SignedDigit
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_unsigned_signed};
+/// # use ibig_core::{Digit, IDigit, add_unsigned_signed};
 /// // 5 + -1 == 4, no carry.
 /// let mut a = [Digit::from(5u8)];
-/// assert_eq!(add_unsigned_signed(&mut a, &[Digit::MAX]), SignedDigit::ZERO);
+/// assert_eq!(add_unsigned_signed(&mut a, &[Digit::MAX]), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(4u8)]);
 ///
 /// // 0 + -1 == -1: the result is negative, so the carry is -1.
 /// let mut a = [Digit::ZERO];
-/// assert_eq!(add_unsigned_signed(&mut a, &[Digit::MAX]), SignedDigit::from(-1i8));
+/// assert_eq!(add_unsigned_signed(&mut a, &[Digit::MAX]), IDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-pub fn add_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn add_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let rhs_extension = sign_extension(rhs);
     let (low, high) = lhs.split_at_mut(rhs.len());
-    let low_carry = SignedDigit::from(add_unsigned_unsigned_same_len(low, rhs)) + rhs_extension;
-    add_unsigned_scarry(high, low_carry)
+    let low_carry = IDigit::from(add_unsigned_unsigned_same_len(low, rhs)) + rhs_extension;
+    add_unsigned_icarry(high, low_carry)
 }
 
 /// Adds the signed digit `rhs` to the non-empty unsigned `lhs` in place, returning a signed
@@ -195,23 +195,23 @@ pub fn add_unsigned_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_unsigned_sdigit};
+/// # use ibig_core::{Digit, IDigit, add_unsigned_idigit};
 /// // 5 + -3 == 2
 /// let mut a = [Digit::from(5u8)];
-/// assert_eq!(add_unsigned_sdigit(&mut a, SignedDigit::from(-3i8)), SignedDigit::ZERO);
+/// assert_eq!(add_unsigned_idigit(&mut a, IDigit::from(-3i8)), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(2u8)]);
 ///
 /// // 0 + -1 == -1, a borrow out of the most-significant digit.
 /// let mut a = [Digit::ZERO];
-/// assert_eq!(add_unsigned_sdigit(&mut a, SignedDigit::from(-1i8)), SignedDigit::from(-1i8));
+/// assert_eq!(add_unsigned_idigit(&mut a, IDigit::from(-1i8)), IDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX]);
 /// ```
-pub fn add_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn add_unsigned_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");
     let (sum, carry) = low.overflowing_add(rhs.cast_unsigned());
     *low = sum;
-    let low_carry = SignedDigit::from(carry) + sign_extension_sdigit(rhs);
-    add_unsigned_scarry(high, low_carry)
+    let low_carry = IDigit::from(carry) + sign_extension_idigit(rhs);
+    add_unsigned_icarry(high, low_carry)
 }
 
 /// Adds the signed `rhs` to the signed `lhs` in place, returning the signed carry (0 or -1).
@@ -225,14 +225,14 @@ pub fn add_unsigned_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_signed_signed};
+/// # use ibig_core::{Digit, IDigit, add_signed_signed};
 /// // -1 + -1 == -2
 /// let mut a = [Digit::MAX];
 /// let high = add_signed_signed(&mut a, &[Digit::MAX]);
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
-/// assert_eq!(high, SignedDigit::from(-1i8));
+/// assert_eq!(high, IDigit::from(-1i8));
 /// ```
-pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let lhs_extension = sign_extension(lhs);
     add_unsigned_signed(lhs, rhs) + lhs_extension
 }
@@ -249,20 +249,20 @@ pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_signed_unsigned};
+/// # use ibig_core::{Digit, IDigit, add_signed_unsigned};
 /// // -1 + 5 == 4.
 /// let mut a = [Digit::MAX]; // -1
-/// assert_eq!(add_signed_unsigned(&mut a, &[Digit::from(5u8)]), SignedDigit::ZERO);
+/// assert_eq!(add_signed_unsigned(&mut a, &[Digit::from(5u8)]), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(4u8)]);
 ///
 /// // A large positive value plus a large unsigned value overflows to a +1 top digit.
 /// let mut a = [Digit::MAX >> 1]; // the largest positive single digit
-/// assert_eq!(add_signed_unsigned(&mut a, &[Digit::MAX]), SignedDigit::from(1i8));
+/// assert_eq!(add_signed_unsigned(&mut a, &[Digit::MAX]), IDigit::from(1i8));
 /// assert_eq!(a, [(Digit::MAX >> 1) - Digit::from(1u8)]);
 /// ```
-pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let lhs_extension = sign_extension(lhs);
-    SignedDigit::from(add_unsigned_unsigned(lhs, rhs)) + lhs_extension
+    IDigit::from(add_unsigned_unsigned(lhs, rhs)) + lhs_extension
 }
 
 /// Adds the unsigned digit `rhs` to the non-empty signed `lhs` in place, returning the signed
@@ -275,15 +275,15 @@ pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_signed_digit};
+/// # use ibig_core::{Digit, IDigit, add_signed_digit};
 /// // -1 + 5 == 4
 /// let mut a = [Digit::MAX]; // -1
-/// assert_eq!(add_signed_digit(&mut a, Digit::from(5u8)), SignedDigit::ZERO);
+/// assert_eq!(add_signed_digit(&mut a, Digit::from(5u8)), IDigit::ZERO);
 /// assert_eq!(a, [Digit::from(4u8)]);
 /// ```
-pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> SignedDigit {
+pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> IDigit {
     let lhs_extension = sign_extension(lhs);
-    SignedDigit::from(add_unsigned_digit(lhs, rhs)) + lhs_extension
+    IDigit::from(add_unsigned_digit(lhs, rhs)) + lhs_extension
 }
 
 /// Adds the signed digit `rhs` to the non-empty signed `lhs` in place, returning the signed
@@ -296,14 +296,14 @@ pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, add_signed_sdigit};
+/// # use ibig_core::{Digit, IDigit, add_signed_idigit};
 /// // -1 + -1 == -2
 /// let mut a = [Digit::MAX];
-/// let high = add_signed_sdigit(&mut a, SignedDigit::from(-1i8));
+/// let high = add_signed_idigit(&mut a, IDigit::from(-1i8));
 /// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
-/// assert_eq!(high, SignedDigit::from(-1i8));
+/// assert_eq!(high, IDigit::from(-1i8));
 /// ```
-pub fn add_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn add_signed_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let lhs_extension = sign_extension(lhs);
-    add_unsigned_sdigit(lhs, rhs) + lhs_extension
+    add_unsigned_idigit(lhs, rhs) + lhs_extension
 }

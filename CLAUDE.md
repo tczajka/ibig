@@ -59,9 +59,9 @@ Always consider whether a change behaves correctly at all three word sizes, sinc
 
 - `UBig` (`src/ubig/repr.rs`) and `IBig` (`src/ibig/repr.rs`) each wrap a private `Digits` — a `SmallVec<[Digit; INLINE_DIGITS]>` (`INLINE_DIGITS = 4`, in `src/lib.rs`) holding the little-endian digits inline up to 4 digits and spilling to the heap beyond that.
 - The representation is **canonical** — every value has exactly one representation, so derived `Eq`/`Hash` are correct. The buffer is never empty (zero is the single digit `[0]`); for `UBig` the most-significant digit is nonzero (except zero), and for `IBig` the digits are two's complement with a most-significant digit that is not a redundant sign-extension of the one below it (the sign lives in its top bit).
-- Construct via `from_digits`, which normalizes (trims to the canonical length, keeps small values inline, shrinks heavily over-allocated heap buffers) — preserve these invariants when building `Digits` directly. `from_digit` / `const_from_digits` build small values (usable in `const`). Read the digits with `as_digits()` (`&[Digit]`) or `into_digits()` (owned `Digits`); `try_to_digit()` returns the value as a single `Digit`/`SignedDigit` when it fits, which is the basis of the single-digit fast path.
+- Construct via `from_digits`, which normalizes (trims to the canonical length, keeps small values inline, shrinks heavily over-allocated heap buffers) — preserve these invariants when building `Digits` directly. `from_digit` / `const_from_digits` build small values (usable in `const`). Read the digits with `as_digits()` (`&[Digit]`) or `into_digits()` (owned `Digits`); `try_to_digit()` returns the value as a single `Digit`/`IDigit` when it fits, which is the basis of the single-digit fast path.
 - The digit count is capped at `MAX_DIGITS` (chosen so the total bit length fits in `usize`); `from_digits` panics beyond it.
-- `Digit` (`ibig-core`) is the architecture's native unsigned integer (`UNative`, 16/32/64 bits) and `SignedDigit` is its signed counterpart (`INative`); numbers are little-endian `Digit` slices.
+- `Digit` (`ibig-core`) is the architecture's native unsigned integer (`UNative`, 16/32/64 bits) and `IDigit` is its signed counterpart (`INative`); numbers are little-endian `Digit` slices.
 
 ### Core algorithms (`ibig-core`)
 
@@ -74,7 +74,7 @@ Low-level routines work on `&[Digit]` / `&mut [Digit]` and stay generic over the
 - The crates are `no_std`; use `alloc` (e.g. `alloc::vec::Vec`).
 - **No `as` for numeric conversions**: use `into()` when the conversion is lossless, or `try_into().unwrap()` when the value is known to fit. (`as` silently truncates and hides bugs when types change, e.g. across the 16/32/64-bit `Digit` widths.)
 - **`ibig-core` doc comments**: don't restate "little-endian", "unsigned" or "two's complement" on individual functions — all three are established at the crate top level (`src/lib.rs`). Functions on signed values just say "signed".
-- **`ibig-core` function naming**: names describe every operand explicitly, using the vocabulary `unsigned` (unsigned slice), `signed` (signed slice), `digit` (`Digit`), `sdigit` (`SignedDigit`), `carry` (`bool`), `scarry` (`SignedDigit` carry: -1/0/1), `borrow` (`bool`). E.g. `add_unsigned_unsigned`, `add_signed_sdigit`, `add_sdigit_sdigit`, `min_len_unsigned`/`min_len_signed`. A name may carry extra qualifiers (`_same_len`, `_1`). Operands with no vocabulary term — shift amounts, byte slices, bit indices — are named directly. The convention is described in the crate-level doc.
+- **`ibig-core` function naming**: names describe every operand explicitly, using the vocabulary `unsigned` (unsigned slice), `signed` (signed slice), `digit` (`Digit`), `idigit` (`IDigit`), `carry` (`bool`), `icarry` (`IDigit` carry: -1/0/1), `borrow` (`bool`). E.g. `add_unsigned_unsigned`, `add_signed_idigit`, `add_idigit_idigit`, `min_len_unsigned`/`min_len_signed`. A name may carry extra qualifiers (`_same_len`, `_1`). Operands with no vocabulary term — shift amounts, byte slices, bit indices — are named directly. The convention is described in the crate-level doc.
 
 ### Tests
 

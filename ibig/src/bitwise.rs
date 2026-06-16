@@ -7,7 +7,7 @@ use crate::ops::{
 use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 
 impl UBig {
     /// Returns `self & !rhs`: the value `self` with every bit that is set in `rhs` cleared.
@@ -67,7 +67,7 @@ impl UnaryOpRefValBig for NotIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit(operand: SignedDigit) -> IBig {
+    fn apply_digit(operand: IDigit) -> IBig {
         IBig::from_digit(!operand)
     }
 
@@ -139,11 +139,11 @@ impl CommutativeBinaryOpRefValBigBig for BitAndIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
+    fn apply_digit_digit(lhs: IDigit, rhs: IDigit) -> IBig {
         IBig::from_digit(lhs & rhs)
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
+    fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> IBig {
         if rhs.is_negative() {
             // High digits are preserved.
             Self::apply_val_digit(Digits::from_slice(lhs), rhs)
@@ -153,7 +153,7 @@ impl CommutativeBinaryOpRefValBigBig for BitAndIBigIBig {
         }
     }
 
-    fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
+    fn apply_val_digit(mut lhs: Digits, rhs: IDigit) -> IBig {
         if rhs.is_negative() {
             // High digits are preserved.
             lhs[0] &= rhs.cast_unsigned();
@@ -285,11 +285,11 @@ impl CommutativeBinaryOpRefValBigBig for BitOrIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
+    fn apply_digit_digit(lhs: IDigit, rhs: IDigit) -> IBig {
         IBig::from_digit(lhs | rhs)
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
+    fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> IBig {
         if rhs.is_negative() {
             // OR with a negative value sets every high bit, collapsing to a single digit.
             Self::apply_digit_digit(lhs[0].cast_signed(), rhs)
@@ -299,7 +299,7 @@ impl CommutativeBinaryOpRefValBigBig for BitOrIBigIBig {
         }
     }
 
-    fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
+    fn apply_val_digit(mut lhs: Digits, rhs: IDigit) -> IBig {
         if rhs.is_negative() {
             // OR with a negative value sets every high bit, collapsing to a single digit.
             Self::apply_digit_digit(lhs[0].cast_signed(), rhs)
@@ -432,15 +432,15 @@ impl CommutativeBinaryOpRefValBigBig for BitXorIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
+    fn apply_digit_digit(lhs: IDigit, rhs: IDigit) -> IBig {
         IBig::from_digit(lhs ^ rhs)
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
+    fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> IBig {
         Self::apply_val_digit(Digits::from_slice(lhs), rhs)
     }
 
-    fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
+    fn apply_val_digit(mut lhs: Digits, rhs: IDigit) -> IBig {
         let (lhs_low, lhs_high) = lhs.split_first_mut().unwrap();
         *lhs_low ^= rhs.cast_unsigned();
         if rhs.is_negative() {

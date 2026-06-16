@@ -2,8 +2,8 @@
 
 use core::hint::assert_unchecked;
 use ibig_core::{
-    DIGIT_BITS_USIZE, Digit, SignedDigit, min_len_signed, min_len_unsigned, sign_extension,
-    sign_extension_sdigit,
+    DIGIT_BITS_USIZE, Digit, IDigit, min_len_signed, min_len_unsigned, sign_extension,
+    sign_extension_idigit,
 };
 use smallvec::{SmallVec, smallvec};
 
@@ -165,13 +165,13 @@ pub struct IBig(
 
 impl IBig {
     /// Construct from a single signed digit.
-    pub(crate) fn from_digit(digit: SignedDigit) -> IBig {
+    pub(crate) fn from_digit(digit: IDigit) -> IBig {
         // A single signed digit is always canonical.
         IBig(smallvec![digit.cast_unsigned()])
     }
 
     /// Construct from a single signed digit, usable in `const` contexts.
-    pub(crate) const fn const_from_digit(digit: SignedDigit) -> IBig {
+    pub(crate) const fn const_from_digit(digit: IDigit) -> IBig {
         let mut buffer = [Digit::ZERO; INLINE_DIGITS];
         buffer[0] = digit.cast_unsigned();
         // A single signed digit is always canonical.
@@ -181,8 +181,8 @@ impl IBig {
 
     /// Construct from the two little-endian digits of a two's complement representation,
     /// where `high` carries the sign.
-    pub(crate) fn from_two_digits(low: Digit, high: SignedDigit) -> IBig {
-        if high == sign_extension_sdigit(low.cast_signed()) {
+    pub(crate) fn from_two_digits(low: Digit, high: IDigit) -> IBig {
+        if high == sign_extension_idigit(low.cast_signed()) {
             IBig::from_digit(low.cast_signed())
         } else {
             IBig(smallvec![low, high.cast_unsigned()])
@@ -217,7 +217,7 @@ impl IBig {
         IBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
     }
 
-    /// Construct from little-endian two's complement digits plus the sign digit `scarry`
+    /// Construct from little-endian two's complement digits plus the sign digit `icarry`
     /// returned by a signed addition or subtraction, appended unless it is a redundant
     /// sign-extension of the digit below it.
     ///
@@ -225,11 +225,11 @@ impl IBig {
     ///
     /// Panics if `digits` is empty, or if, after normalization, the value has more than
     /// [`MAX_DIGITS`] digits.
-    pub(crate) fn from_digits_scarry(mut digits: Digits, scarry: SignedDigit) -> IBig {
-        if scarry != sign_extension(&digits) {
-            // `scarry` is a non-redundant most-significant digit, so `digits` is already at its
+    pub(crate) fn from_digits_icarry(mut digits: Digits, icarry: IDigit) -> IBig {
+        if icarry != sign_extension(&digits) {
+            // `icarry` is a non-redundant most-significant digit, so `digits` is already at its
             // canonical length; only the buffer capacity may need shrinking.
-            digits.push(scarry.cast_unsigned());
+            digits.push(icarry.cast_unsigned());
             IBig::shrink(digits)
         } else {
             IBig::from_digits(digits)
@@ -303,9 +303,9 @@ impl AsDigits for UBig {
 }
 
 impl AsDigits for IBig {
-    type SingleDigit = SignedDigit;
+    type SingleDigit = IDigit;
 
-    fn as_digits(&self) -> AsDigitsResult<SignedDigit, &[Digit]> {
+    fn as_digits(&self) -> AsDigitsResult<IDigit, &[Digit]> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0].cast_signed())
         } else {
@@ -316,7 +316,7 @@ impl AsDigits for IBig {
         }
     }
 
-    fn into_digits(self) -> AsDigitsResult<SignedDigit, Digits> {
+    fn into_digits(self) -> AsDigitsResult<IDigit, Digits> {
         if !self.0.spilled() && self.0.len() == 1 {
             AsDigitsResult::Small(self.0[0].cast_signed())
         } else {

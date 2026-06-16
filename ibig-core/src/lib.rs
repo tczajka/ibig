@@ -13,9 +13,9 @@
 //! * `unsigned` — a slice of digits interpreted as an unsigned (non-negative) value
 //! * `signed` — a slice of digits interpreted as a signed value (always two's complement)
 //! * `digit` — a single [`Digit`]
-//! * `sdigit` — a single [`SignedDigit`]
+//! * `idigit` — a single [`IDigit`]
 //! * `carry` — a `bool` carry (0 or 1)
-//! * `scarry` — a [`SignedDigit`] carry (-1, 0, or 1)
+//! * `icarry` — a [`IDigit`] carry (-1, 0, or 1)
 //! * `borrow` — a `bool` borrow (0 or 1)
 
 #![no_std]
@@ -30,8 +30,8 @@ mod sign;
 mod sub;
 
 pub use add::{
-    add_signed_digit, add_signed_sdigit, add_signed_signed, add_signed_unsigned, add_unsigned_1,
-    add_unsigned_carry, add_unsigned_digit, add_unsigned_scarry, add_unsigned_sdigit,
+    add_signed_digit, add_signed_idigit, add_signed_signed, add_signed_unsigned, add_unsigned_1,
+    add_unsigned_carry, add_unsigned_digit, add_unsigned_icarry, add_unsigned_idigit,
     add_unsigned_signed, add_unsigned_unsigned, add_unsigned_unsigned_same_len,
 };
 pub use bits::{
@@ -45,17 +45,17 @@ pub use bytes::{
 };
 pub use len::{min_len_bytes_signed, min_len_bytes_unsigned, min_len_signed, min_len_unsigned};
 pub use shift::{
-    shl_small_digit, shl_small_sdigit, shl_small_signed, shl_small_unsigned, shr_small_signed,
+    shl_small_digit, shl_small_idigit, shl_small_signed, shl_small_unsigned, shr_small_signed,
     shr_small_unsigned,
 };
 pub use sign::{
     extend_signed, extend_signed_bytes, is_negative, neg, sign_extension, sign_extension_byte,
-    sign_extension_sdigit,
+    sign_extension_idigit,
 };
 pub use sub::{
-    sub_rev_signed_sdigit, sub_rev_signed_signed, sub_rev_unsigned_unsigned_same_len,
-    sub_signed_sdigit, sub_signed_signed, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
-    sub_unsigned_sdigit, sub_unsigned_signed, sub_unsigned_unsigned,
+    sub_rev_signed_idigit, sub_rev_signed_signed, sub_rev_unsigned_unsigned_same_len,
+    sub_signed_idigit, sub_signed_signed, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
+    sub_unsigned_idigit, sub_unsigned_signed, sub_unsigned_unsigned,
     sub_unsigned_unsigned_same_len,
 };
 use unative::{INative, UNative};
@@ -72,4 +72,4 @@ pub type Digit = UNative;
 /// This is the platform's native signed integer type ([`INative`]), the same width as
 /// [`Digit`]. It is used as the most-significant digit of a signed number, where the sign
 /// bit lives.
-pub type SignedDigit = INative;
+pub type IDigit = INative;

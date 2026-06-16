@@ -1,7 +1,7 @@
 //! Minimal canonical length of a digit or byte slice.
 
 use crate::Digit;
-use crate::sign::{sign_extension_byte, sign_extension_sdigit};
+use crate::sign::{sign_extension_byte, sign_extension_idigit};
 
 /// Returns the minimum number of digits needed to represent the value held in `digits`.
 ///
@@ -52,7 +52,7 @@ pub const fn min_len_signed(digits: &[Digit]) -> usize {
     let mut len = digits.len();
     while len > 1
         && digits[len - 1]
-            .const_eq(sign_extension_sdigit(digits[len - 2].cast_signed()).cast_unsigned())
+            .const_eq(sign_extension_idigit(digits[len - 2].cast_signed()).cast_unsigned())
     {
         len -= 1;
     }

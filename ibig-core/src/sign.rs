@@ -1,6 +1,6 @@
 //! Sign and sign-extension of signed digit and byte slices.
 
-use crate::{Digit, SignedDigit, not};
+use crate::{Digit, IDigit, not};
 
 /// Returns `true` if the non-empty signed `digits` represent a negative value (the
 /// most-significant digit's sign bit is set).
@@ -30,18 +30,18 @@ pub const fn is_negative(digits: &[Digit]) -> bool {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, neg};
+/// # use ibig_core::{Digit, IDigit, neg};
 /// // -1 negates to 1.
 /// let mut a = [Digit::MAX];
 /// let high = neg(&mut a);
 /// assert_eq!(a, [Digit::from(1u8)]);
-/// assert_eq!(high, SignedDigit::ZERO);
+/// assert_eq!(high, IDigit::ZERO);
 /// ```
-pub fn neg(digits: &mut [Digit]) -> SignedDigit {
+pub fn neg(digits: &mut [Digit]) -> IDigit {
     assert!(!digits.is_empty(), "signed digits are empty");
     // Skip zeros.
     let Some(index) = digits.iter().position(|&d| d != Digit::ZERO) else {
-        return SignedDigit::ZERO;
+        return IDigit::ZERO;
     };
     let high = &mut digits[index..];
     let extension = sign_extension(high);
@@ -122,15 +122,15 @@ pub fn extend_signed_bytes(bytes: &mut [u8], len: usize) {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sign_extension};
-/// assert_eq!(sign_extension(&[Digit::MAX]), SignedDigit::from(-1i8)); // -1
-/// assert_eq!(sign_extension(&[Digit::from(5u8)]), SignedDigit::ZERO); // +5
+/// # use ibig_core::{Digit, IDigit, sign_extension};
+/// assert_eq!(sign_extension(&[Digit::MAX]), IDigit::from(-1i8)); // -1
+/// assert_eq!(sign_extension(&[Digit::from(5u8)]), IDigit::ZERO); // +5
 /// // The sign comes from the most-significant digit.
-/// assert_eq!(sign_extension(&[Digit::from(5u8), Digit::MAX]), SignedDigit::from(-1i8));
+/// assert_eq!(sign_extension(&[Digit::from(5u8), Digit::MAX]), IDigit::from(-1i8));
 /// ```
-pub const fn sign_extension(digits: &[Digit]) -> SignedDigit {
+pub const fn sign_extension(digits: &[Digit]) -> IDigit {
     let last = digits.last().expect("signed digits are empty");
-    sign_extension_sdigit(last.cast_signed())
+    sign_extension_idigit(last.cast_signed())
 }
 
 /// The sign-extension digit for a signed value whose most-significant digit is
@@ -139,14 +139,14 @@ pub const fn sign_extension(digits: &[Digit]) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{SignedDigit, sign_extension_sdigit};
-/// assert_eq!(sign_extension_sdigit(SignedDigit::from(-2i8)), SignedDigit::from(-1i8));
-/// assert_eq!(sign_extension_sdigit(SignedDigit::from(5i8)), SignedDigit::ZERO);
+/// # use ibig_core::{IDigit, sign_extension_idigit};
+/// assert_eq!(sign_extension_idigit(IDigit::from(-2i8)), IDigit::from(-1i8));
+/// assert_eq!(sign_extension_idigit(IDigit::from(5i8)), IDigit::ZERO);
 /// ```
-pub const fn sign_extension_sdigit(high: SignedDigit) -> SignedDigit {
+pub const fn sign_extension_idigit(high: IDigit) -> IDigit {
     // Smear the sign bit across the whole digit: arithmetic-shifting it down to every bit
     // yields all-ones for a negative `high` and all-zeros otherwise.
-    high.checked_shr(SignedDigit::BITS - 1).unwrap()
+    high.checked_shr(IDigit::BITS - 1).unwrap()
 }
 
 /// The sign-extension byte for a signed value whose most-significant byte is `high`:

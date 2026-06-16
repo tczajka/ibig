@@ -1,6 +1,6 @@
 //! Bit shifts.
 
-use crate::{Digit, SignedDigit, sign::sign_extension_sdigit};
+use crate::{Digit, IDigit, sign::sign_extension_idigit};
 
 /// Shifts `digits` left by `shift` bits in place, returning the overflow.
 ///
@@ -116,18 +116,18 @@ pub fn shr_small_unsigned(digits: &mut [Digit], shift: u32) {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, shl_small_signed};
+/// # use ibig_core::{Digit, IDigit, shl_small_signed};
 /// let mut a = [Digit::MAX]; // -1
 /// let overflow = shl_small_signed(&mut a, 1);
 /// assert_eq!(a, [!Digit::from(1u8)]); // -2
-/// assert_eq!(overflow, SignedDigit::from(-1i8)); // sign extension of -1
+/// assert_eq!(overflow, IDigit::from(-1i8)); // sign extension of -1
 /// ```
-pub fn shl_small_signed(digits: &mut [Digit], shift: u32) -> SignedDigit {
+pub fn shl_small_signed(digits: &mut [Digit], shift: u32) -> IDigit {
     let (top, low) = digits.split_last_mut().expect("digits is empty");
     // Shift the lower digits as unsigned and the top digit as signed, stitching the carry
     // into the top digit.
     let carry = shl_small_unsigned(low, shift);
-    let (new_top, overflow) = shl_small_sdigit(top.cast_signed(), shift);
+    let (new_top, overflow) = shl_small_idigit(top.cast_signed(), shift);
     *top = new_top | carry;
     overflow
 }
@@ -146,23 +146,23 @@ pub fn shl_small_signed(digits: &mut [Digit], shift: u32) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, shl_small_sdigit};
+/// # use ibig_core::{Digit, IDigit, shl_small_idigit};
 /// // -1 << 1 == -2, spanning two digits.
 /// assert_eq!(
-///     shl_small_sdigit(SignedDigit::from(-1i8), 1),
-///     (!Digit::from(1u8), SignedDigit::from(-1i8))
+///     shl_small_idigit(IDigit::from(-1i8), 1),
+///     (!Digit::from(1u8), IDigit::from(-1i8))
 /// );
 /// ```
-pub fn shl_small_sdigit(digit: SignedDigit, shift: u32) -> (Digit, SignedDigit) {
+pub fn shl_small_idigit(digit: IDigit, shift: u32) -> (Digit, IDigit) {
     assert!(shift < Digit::BITS);
     if shift == 0 {
         // The high digit is pure sign extension.
-        return (digit.cast_unsigned(), sign_extension_sdigit(digit));
+        return (digit.cast_unsigned(), sign_extension_idigit(digit));
     }
     // The arithmetic shift sign-extends the high digit.
     (
         digit.cast_unsigned() << shift,
-        digit >> (SignedDigit::BITS - shift),
+        digit >> (IDigit::BITS - shift),
     )
 }
 

@@ -6,7 +6,7 @@ use crate::ops::{
 use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{Add, AddAssign};
-use ibig_core::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
+use ibig_core::{Digit, IDigit, sign_extension, sign_extension_idigit};
 
 impl UBig {
     /// Adds the signed `rhs` to `self`, returning `None` if the result would be negative.
@@ -53,12 +53,12 @@ impl UBig {
         self.checked_add_signed(rhs).unwrap_or(UBig::ZERO)
     }
 
-    /// Constructs a [`UBig`] from `digits` topped by a signed carry `scarry`, returning `None`
-    /// when `scarry` is negative (the value would be negative).
-    pub(crate) fn try_from_digits_scarry(digits: Digits, scarry: SignedDigit) -> Option<UBig> {
-        // A non-negative `scarry` is the 0-or-1 carry above `digits`; a negative one is not a
+    /// Constructs a [`UBig`] from `digits` topped by a signed carry `icarry`, returning `None`
+    /// when `icarry` is negative (the value would be negative).
+    pub(crate) fn try_from_digits_icarry(digits: Digits, icarry: IDigit) -> Option<UBig> {
+        // A non-negative `icarry` is the 0-or-1 carry above `digits`; a negative one is not a
         // valid `bool`, so the conversion fails and `?` returns `None`.
-        let carry = bool::try_from(scarry).ok()?;
+        let carry = bool::try_from(icarry).ok()?;
         Some(UBig::from_digits_carry(digits, carry))
     }
 }
@@ -156,7 +156,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
     type Right = IBig;
     type Output = Option<UBig>;
 
-    fn apply_digit_digit(lhs: Digit, rhs: SignedDigit) -> Option<UBig> {
+    fn apply_digit_digit(lhs: Digit, rhs: IDigit) -> Option<UBig> {
         let (sum, overflow) = lhs.overflowing_add_signed(rhs);
         if !overflow {
             Some(UBig::from_digit(sum))
@@ -178,26 +178,26 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
         // Clone the signed `rhs` (the longer operand) and add the unsigned digit `lhs`.
         let mut digits = Digits::with_capacity(rhs.len() + 1);
         digits.extend_from_slice(rhs);
-        let scarry = ibig_core::add_signed_digit(&mut digits, lhs);
-        UBig::try_from_digits_scarry(digits, scarry)
+        let icarry = ibig_core::add_signed_digit(&mut digits, lhs);
+        UBig::try_from_digits_icarry(digits, icarry)
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> Option<UBig> {
+    fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> Option<UBig> {
         // Clone the unsigned `lhs` (the longer operand) and add the signed digit `rhs`.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
-        let scarry = ibig_core::add_unsigned_sdigit(&mut digits, rhs);
-        UBig::try_from_digits_scarry(digits, scarry)
+        let icarry = ibig_core::add_unsigned_idigit(&mut digits, rhs);
+        UBig::try_from_digits_icarry(digits, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
         let mut digits;
-        let scarry;
+        let icarry;
         if lhs.len() >= rhs.len() {
             // Clone the unsigned `lhs` (the longer operand) and add the signed `rhs`.
             digits = Digits::with_capacity(lhs.len() + 1);
             digits.extend_from_slice(lhs);
-            scarry = ibig_core::add_unsigned_signed(&mut digits, rhs);
+            icarry = ibig_core::add_unsigned_signed(&mut digits, rhs);
         } else {
             // `rhs` is longer. If it is at least two digits longer and negative, its magnitude
             // exceeds any `lhs` of `lhs.len()` digits, so the result is certainly negative.
@@ -207,9 +207,9 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
             // Clone the signed `rhs` (the longer operand) and add the unsigned `lhs`.
             digits = Digits::with_capacity(rhs.len() + 1);
             digits.extend_from_slice(rhs);
-            scarry = ibig_core::add_signed_unsigned(&mut digits, lhs);
+            icarry = ibig_core::add_signed_unsigned(&mut digits, lhs);
         }
-        UBig::try_from_digits_scarry(digits, scarry)
+        UBig::try_from_digits_icarry(digits, icarry)
     }
 }
 
@@ -221,42 +221,42 @@ impl BinaryOpRefBigBig for AddIBigUBig {
     type Right = UBig;
     type Output = IBig;
 
-    fn apply_digit_digit(lhs: SignedDigit, rhs: Digit) -> IBig {
+    fn apply_digit_digit(lhs: IDigit, rhs: Digit) -> IBig {
         let (sum, carry) = lhs.cast_unsigned().overflowing_add(rhs);
-        IBig::from_two_digits(sum, SignedDigit::from(carry) + sign_extension_sdigit(lhs))
+        IBig::from_two_digits(sum, IDigit::from(carry) + sign_extension_idigit(lhs))
     }
 
-    fn apply_digit_ref(lhs: SignedDigit, rhs: &[Digit]) -> IBig {
+    fn apply_digit_ref(lhs: IDigit, rhs: &[Digit]) -> IBig {
         // Clone the unsigned `rhs` (the longer operand) and add the signed digit `lhs`.
         let mut digits = Digits::with_capacity(rhs.len() + 1);
         digits.extend_from_slice(rhs);
-        let scarry = ibig_core::add_unsigned_sdigit(&mut digits, lhs);
-        IBig::from_digits_scarry(digits, scarry)
+        let icarry = ibig_core::add_unsigned_idigit(&mut digits, lhs);
+        IBig::from_digits_icarry(digits, icarry)
     }
 
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> IBig {
         // Clone the signed `lhs` (the longer operand) and add the unsigned digit `rhs`.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
-        let scarry = ibig_core::add_signed_digit(&mut digits, rhs);
-        IBig::from_digits_scarry(digits, scarry)
+        let icarry = ibig_core::add_signed_digit(&mut digits, rhs);
+        IBig::from_digits_icarry(digits, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
         let mut digits;
-        let scarry;
+        let icarry;
         if lhs.len() >= rhs.len() {
             // Clone the signed `lhs` (the longer operand) and add the unsigned `rhs`.
             digits = Digits::with_capacity(lhs.len() + 1);
             digits.extend_from_slice(lhs);
-            scarry = ibig_core::add_signed_unsigned(&mut digits, rhs);
+            icarry = ibig_core::add_signed_unsigned(&mut digits, rhs);
         } else {
             // Clone the unsigned `rhs` (the longer operand) and add the signed `lhs`.
             digits = Digits::with_capacity(rhs.len() + 1);
             digits.extend_from_slice(rhs);
-            scarry = ibig_core::add_unsigned_signed(&mut digits, lhs);
+            icarry = ibig_core::add_unsigned_signed(&mut digits, lhs);
         }
-        IBig::from_digits_scarry(digits, scarry)
+        IBig::from_digits_icarry(digits, icarry)
     }
 }
 
@@ -267,26 +267,26 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit_digit(lhs: SignedDigit, rhs: SignedDigit) -> IBig {
+    fn apply_digit_digit(lhs: IDigit, rhs: IDigit) -> IBig {
         let (sum, overflow) = lhs.overflowing_add(rhs);
         if overflow {
             // On overflow `lhs` and `rhs` share a sign, which is the sign of the two-digit result.
-            IBig::from_two_digits(sum.cast_unsigned(), sign_extension_sdigit(lhs))
+            IBig::from_two_digits(sum.cast_unsigned(), sign_extension_idigit(lhs))
         } else {
             IBig::from_digit(sum)
         }
     }
 
-    fn apply_ref_digit(lhs: &[Digit], rhs: SignedDigit) -> IBig {
+    fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> IBig {
         // Clone with room for a possible sign digit.
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
         Self::apply_val_digit(digits, rhs)
     }
 
-    fn apply_val_digit(mut lhs: Digits, rhs: SignedDigit) -> IBig {
-        let scarry = ibig_core::add_signed_sdigit(&mut lhs, rhs);
-        IBig::from_digits_scarry(lhs, scarry)
+    fn apply_val_digit(mut lhs: Digits, rhs: IDigit) -> IBig {
+        let icarry = ibig_core::add_signed_idigit(&mut lhs, rhs);
+        IBig::from_digits_icarry(lhs, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
@@ -311,8 +311,8 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
             let fill = sign_extension(&lhs).cast_unsigned();
             lhs.resize(rhs.len(), fill);
         }
-        let scarry = ibig_core::add_signed_signed(&mut lhs, rhs);
-        IBig::from_digits_scarry(lhs, scarry)
+        let icarry = ibig_core::add_signed_signed(&mut lhs, rhs);
+        IBig::from_digits_icarry(lhs, icarry)
     }
 
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {

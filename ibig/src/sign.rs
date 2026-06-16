@@ -4,7 +4,7 @@ use crate::IBig;
 use crate::ops::{UnaryOpRef, UnaryOpRefBig, UnaryOpRefValBig, impl_unary_operator};
 use crate::repr::Digits;
 use core::ops::Neg;
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 
 impl IBig {
     /// Returns `true` if the number is negative (less than zero).
@@ -42,7 +42,7 @@ impl UnaryOpRefBig for IsNegativeIBig {
     type Operand = IBig;
     type Output = bool;
 
-    fn apply_digit(operand: SignedDigit) -> bool {
+    fn apply_digit(operand: IDigit) -> bool {
         operand.is_negative()
     }
 
@@ -58,7 +58,7 @@ impl UnaryOpRefBig for IsPositiveIBig {
     type Operand = IBig;
     type Output = bool;
 
-    fn apply_digit(operand: SignedDigit) -> bool {
+    fn apply_digit(operand: IDigit) -> bool {
         operand.is_positive()
     }
 
@@ -75,7 +75,7 @@ impl UnaryOpRefBig for SignumIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit(operand: SignedDigit) -> IBig {
+    fn apply_digit(operand: IDigit) -> IBig {
         IBig::from_digit(operand.signum())
     }
 
@@ -96,11 +96,11 @@ impl UnaryOpRefValBig for NegIBig {
     type Operand = IBig;
     type Output = IBig;
 
-    fn apply_digit(operand: SignedDigit) -> IBig {
+    fn apply_digit(operand: IDigit) -> IBig {
         let (neg, overflow) = operand.overflowing_neg();
         if overflow {
-            // Only `SignedDigit::MIN` overflows; -MIN == 2^(bits-1) needs a second digit.
-            IBig::from_two_digits(neg.cast_unsigned(), SignedDigit::ZERO)
+            // Only `IDigit::MIN` overflows; -MIN == 2^(bits-1) needs a second digit.
+            IBig::from_two_digits(neg.cast_unsigned(), IDigit::ZERO)
         } else {
             IBig::from_digit(neg)
         }
@@ -114,8 +114,8 @@ impl UnaryOpRefValBig for NegIBig {
     }
 
     fn apply_val(mut operand: Digits) -> IBig {
-        let scarry = ibig_core::neg(&mut operand);
-        IBig::from_digits_scarry(operand, scarry)
+        let icarry = ibig_core::neg(&mut operand);
+        IBig::from_digits_icarry(operand, icarry)
     }
 }
 

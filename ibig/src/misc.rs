@@ -1,7 +1,7 @@
 //! Miscellaneous functionality.
 
 use crate::{IBig, UBig};
-use ibig_core::{Digit, SignedDigit};
+use ibig_core::{Digit, IDigit};
 
 impl UBig {
     /// The number zero.
@@ -10,7 +10,7 @@ impl UBig {
 
 impl IBig {
     /// The number zero.
-    pub const ZERO: IBig = IBig::const_from_digit(SignedDigit::ZERO);
+    pub const ZERO: IBig = IBig::const_from_digit(IDigit::ZERO);
 }
 
 /// The default value is zero.

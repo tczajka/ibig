@@ -5,7 +5,7 @@ use crate::repr::{Digits, MAX_DIGITS, panic_number_too_large};
 use crate::{IBig, UBig};
 use core::iter::repeat_n;
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
-use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, SignedDigit};
+use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, IDigit};
 
 /// Left shift of a [`UBig`].
 enum ShlUBig {}
@@ -80,13 +80,13 @@ impl BinaryOpRefValBigCopy for ShlIBig {
     type Right = usize;
     type Output = IBig;
 
-    fn apply_digit(lhs: SignedDigit, rhs: usize) -> IBig {
+    fn apply_digit(lhs: IDigit, rhs: usize) -> IBig {
         // Shifting zero is zero (and avoids allocating `rhs / DIGIT_BITS` zero digits).
-        if lhs == SignedDigit::ZERO {
+        if lhs == IDigit::ZERO {
             return IBig::ZERO;
         }
         let index = BitIndex::from(rhs);
-        let (low, high) = ibig_core::shl_small_sdigit(lhs, index.bit_index());
+        let (low, high) = ibig_core::shl_small_idigit(lhs, index.bit_index());
         // With no whole-digit offset, the pair is the entire result.
         if index.digit_index() == 0 {
             return IBig::from_two_digits(low, high);
@@ -190,7 +190,7 @@ impl BinaryOpRefValBigCopy for ShrIBig {
     type Right = usize;
     type Output = IBig;
 
-    fn apply_digit(lhs: SignedDigit, rhs: usize) -> IBig {
+    fn apply_digit(lhs: IDigit, rhs: usize) -> IBig {
         // Beyond `DIGIT_BITS - 1`, the arithmetic shift saturates to the sign.
         let small: u32 = rhs.min(DIGIT_BITS_USIZE - 1).try_into().unwrap();
         IBig::from_digit(lhs >> small)

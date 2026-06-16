@@ -7,7 +7,7 @@ use crate::ops::{
 use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::mem;
-use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, SignedDigit};
+use ibig_core::{BitIndex, DIGIT_BITS_USIZE, Digit, IDigit};
 use smallvec::smallvec;
 
 impl UBig {
@@ -448,9 +448,9 @@ impl BinaryOpRefBigCopy for BitIBig {
     type Right = usize;
     type Output = bool;
 
-    fn apply_digit(lhs: SignedDigit, rhs: usize) -> bool {
+    fn apply_digit(lhs: IDigit, rhs: usize) -> bool {
         if rhs < DIGIT_BITS_USIZE {
-            (lhs >> rhs) & SignedDigit::from_i8(1) != SignedDigit::ZERO
+            (lhs >> rhs) & IDigit::from_i8(1) != IDigit::ZERO
         } else {
             // Positions above the digit read the sign bit.
             lhs.is_negative()
@@ -470,9 +470,9 @@ impl BinaryOpValBigCopy for SetBitIBig {
     type Right = (usize, bool);
     type Output = IBig;
 
-    fn apply_digit(digit: SignedDigit, (index, value): (usize, bool)) -> IBig {
+    fn apply_digit(digit: IDigit, (index, value): (usize, bool)) -> IBig {
         if index < DIGIT_BITS_USIZE - 1 {
-            let mask = SignedDigit::from_i8(1) << index;
+            let mask = IDigit::from_i8(1) << index;
             IBig::from_digit(if value { digit | mask } else { digit & !mask })
         } else if value == digit.is_negative() {
             // The bit already reads as `value` via sign extension.
@@ -516,7 +516,7 @@ impl UnaryOpRefBig for CheckedIlog2IBig {
     type Operand = IBig;
     type Output = Option<usize>;
 
-    fn apply_digit(operand: SignedDigit) -> Option<usize> {
+    fn apply_digit(operand: IDigit) -> Option<usize> {
         operand.checked_ilog2().map(|x| x.try_into().unwrap())
     }
 
@@ -539,9 +539,9 @@ impl UnaryOpRefBig for TrailingZerosIBig {
     type Operand = IBig;
     type Output = usize;
 
-    fn apply_digit(operand: SignedDigit) -> usize {
+    fn apply_digit(operand: IDigit) -> usize {
         assert!(
-            operand != SignedDigit::ZERO,
+            operand != IDigit::ZERO,
             "zero has infinitely many trailing zeros"
         );
         operand.trailing_zeros().try_into().unwrap()
@@ -562,9 +562,9 @@ impl UnaryOpRefBig for TrailingOnesIBig {
     type Operand = IBig;
     type Output = usize;
 
-    fn apply_digit(operand: SignedDigit) -> usize {
+    fn apply_digit(operand: IDigit) -> usize {
         assert!(
-            operand != SignedDigit::from_i8(-1),
+            operand != IDigit::from_i8(-1),
             "-1 has infinitely many trailing ones"
         );
         operand.trailing_ones().try_into().unwrap()

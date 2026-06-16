@@ -1,10 +1,10 @@
 //! Integration tests for subtraction.
 
 use ibig_core::{
-    Digit, SignedDigit, add_signed_signed, add_unsigned_signed, add_unsigned_unsigned,
-    extend_signed, neg, sign_extension, sub_rev_signed_sdigit, sub_rev_signed_signed,
-    sub_rev_unsigned_unsigned_same_len, sub_signed_sdigit, sub_signed_signed, sub_unsigned_1,
-    sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_sdigit, sub_unsigned_signed,
+    Digit, IDigit, add_signed_signed, add_unsigned_signed, add_unsigned_unsigned, extend_signed,
+    neg, sign_extension, sub_rev_signed_idigit, sub_rev_signed_signed,
+    sub_rev_unsigned_unsigned_same_len, sub_signed_idigit, sub_signed_signed, sub_unsigned_1,
+    sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_idigit, sub_unsigned_signed,
     sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,
 };
 use proptest::collection::vec;
@@ -14,8 +14,8 @@ fn digit(n: u8) -> Digit {
     Digit::from(n)
 }
 
-fn sdigit(n: i8) -> SignedDigit {
-    SignedDigit::from(n)
+fn idigit(n: i8) -> IDigit {
+    IDigit::from(n)
 }
 
 #[test]
@@ -139,27 +139,27 @@ fn sub_unsigned_1_basic() {
 fn sub_unsigned_signed_basic() {
     // Subtracting a non-negative value: 8 - 3 == 5.
     let mut a = [digit(8), digit(2)];
-    assert_eq!(sub_unsigned_signed(&mut a, &[digit(3)]), sdigit(0));
+    assert_eq!(sub_unsigned_signed(&mut a, &[digit(3)]), idigit(0));
     assert_eq!(a, [digit(5), digit(2)]);
 
     // Subtracting a negative adds: 5 - -1 == 6.
     let mut a = [digit(5)];
-    assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), sdigit(0));
+    assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), idigit(0));
     assert_eq!(a, [digit(6)]);
 
     // A negative result: 2 - 3 == -1, carry -1.
     let mut a = [digit(2)];
-    assert_eq!(sub_unsigned_signed(&mut a, &[digit(3)]), sdigit(-1));
+    assert_eq!(sub_unsigned_signed(&mut a, &[digit(3)]), idigit(-1));
     assert_eq!(a, [Digit::MAX]);
 
     // An overflow into a +1 carry: (2^bits - 1) - -1 == 2^bits.
     let mut a = [Digit::MAX];
-    assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), sdigit(1));
+    assert_eq!(sub_unsigned_signed(&mut a, &[Digit::MAX]), idigit(1));
     assert_eq!(a, [Digit::ZERO]);
 
     // A borrow ripples through the high zero digits: 2^(2*bits) - 1.
     let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
-    assert_eq!(sub_unsigned_signed(&mut a, &[digit(1)]), sdigit(0));
+    assert_eq!(sub_unsigned_signed(&mut a, &[digit(1)]), idigit(0));
     assert_eq!(a, [Digit::MAX, Digit::MAX, Digit::ZERO]);
 }
 
@@ -176,68 +176,68 @@ fn sub_unsigned_signed_rhs_empty() {
 }
 
 #[test]
-fn sub_unsigned_sdigit_basic() {
+fn sub_unsigned_idigit_basic() {
     // 5 - -3 == 8.
     let mut a = [digit(5)];
-    assert_eq!(sub_unsigned_sdigit(&mut a, sdigit(-3)), sdigit(0));
+    assert_eq!(sub_unsigned_idigit(&mut a, idigit(-3)), idigit(0));
     assert_eq!(a, [digit(8)]);
 
     // A borrow into the high digits: [0, 1] - 1 == [MAX, 0].
     let mut a = [Digit::ZERO, digit(1)];
-    assert_eq!(sub_unsigned_sdigit(&mut a, sdigit(1)), sdigit(0));
+    assert_eq!(sub_unsigned_idigit(&mut a, idigit(1)), idigit(0));
     assert_eq!(a, [Digit::MAX, digit(0)]);
 
     // A negative result: 0 - 1 == -1.
     let mut a = [Digit::ZERO];
-    assert_eq!(sub_unsigned_sdigit(&mut a, sdigit(1)), sdigit(-1));
+    assert_eq!(sub_unsigned_idigit(&mut a, idigit(1)), idigit(-1));
     assert_eq!(a, [Digit::MAX]);
 
     // A positive overflow into a +1 carry: (2^bits - 1) - -1 == 2^bits.
     let mut a = [Digit::MAX];
-    assert_eq!(sub_unsigned_sdigit(&mut a, sdigit(-1)), sdigit(1));
+    assert_eq!(sub_unsigned_idigit(&mut a, idigit(-1)), idigit(1));
     assert_eq!(a, [Digit::ZERO]);
 }
 
 #[test]
 #[should_panic]
-fn sub_unsigned_sdigit_empty() {
-    sub_unsigned_sdigit(&mut [], sdigit(1));
+fn sub_unsigned_idigit_empty() {
+    sub_unsigned_idigit(&mut [], idigit(1));
 }
 
 #[test]
 fn sub_signed_signed_basic() {
     // Two non-negative values.
     let mut a = [digit(7), digit(3)];
-    assert_eq!(sub_signed_signed(&mut a, &[digit(5)]), sdigit(0));
+    assert_eq!(sub_signed_signed(&mut a, &[digit(5)]), idigit(0));
     assert_eq!(a, [digit(2), digit(3)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(3)];
-    assert_eq!(sub_signed_signed(&mut a, &[digit(5)]), sdigit(-1));
+    assert_eq!(sub_signed_signed(&mut a, &[digit(5)]), idigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 
     // -1 - -1 == 0.
     let mut a = [Digit::MAX];
-    assert_eq!(sub_signed_signed(&mut a, &[Digit::MAX]), sdigit(0));
+    assert_eq!(sub_signed_signed(&mut a, &[Digit::MAX]), idigit(0));
     assert_eq!(a, [Digit::ZERO]);
 
     // Subtracting a negative adds: 5 - -3 == 8 (`Digit::MAX - 2` is -3).
     let mut a = [digit(5)];
     assert_eq!(
         sub_signed_signed(&mut a, &[Digit::MAX - digit(2)]),
-        sdigit(0)
+        idigit(0)
     );
     assert_eq!(a, [digit(8)]);
 
     // A negative result that overflows into the returned digit: signed_min - 1.
     let signed_min = (Digit::MAX >> 1) + digit(1);
     let mut a = [signed_min];
-    assert_eq!(sub_signed_signed(&mut a, &[digit(1)]), sdigit(-1));
+    assert_eq!(sub_signed_signed(&mut a, &[digit(1)]), idigit(-1));
     assert_eq!(a, [signed_min - digit(1)]);
 
     // A borrow ripples through the high zero digits: 2^(2*bits) - 1.
     let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
-    assert_eq!(sub_signed_signed(&mut a, &[digit(1)]), sdigit(0));
+    assert_eq!(sub_signed_signed(&mut a, &[digit(1)]), idigit(0));
     assert_eq!(a, [Digit::MAX, Digit::MAX, Digit::ZERO]);
 }
 
@@ -254,32 +254,32 @@ fn sub_signed_signed_rhs_empty() {
 }
 
 #[test]
-fn sub_signed_sdigit_basic() {
+fn sub_signed_idigit_basic() {
     // Two non-negative values.
     let mut a = [digit(7), digit(3)];
-    assert_eq!(sub_signed_sdigit(&mut a, sdigit(5)), sdigit(0));
+    assert_eq!(sub_signed_idigit(&mut a, idigit(5)), idigit(0));
     assert_eq!(a, [digit(2), digit(3)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(3)];
-    assert_eq!(sub_signed_sdigit(&mut a, sdigit(5)), sdigit(-1));
+    assert_eq!(sub_signed_idigit(&mut a, idigit(5)), idigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 
     // Subtracting a negative adds: 5 - -3 == 8.
     let mut a = [digit(5)];
-    assert_eq!(sub_signed_sdigit(&mut a, sdigit(-3)), sdigit(0));
+    assert_eq!(sub_signed_idigit(&mut a, idigit(-3)), idigit(0));
     assert_eq!(a, [digit(8)]);
 
     // A borrow ripples through the high zero digits: 2^(2*bits) - 1.
     let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
-    assert_eq!(sub_signed_sdigit(&mut a, sdigit(1)), sdigit(0));
+    assert_eq!(sub_signed_idigit(&mut a, idigit(1)), idigit(0));
     assert_eq!(a, [Digit::MAX, Digit::MAX, Digit::ZERO]);
 }
 
 #[test]
 #[should_panic]
-fn sub_signed_sdigit_empty() {
-    sub_signed_sdigit(&mut [], sdigit(1));
+fn sub_signed_idigit_empty() {
+    sub_signed_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -314,28 +314,28 @@ fn sub_rev_unsigned_unsigned_same_len_mismatched() {
 fn sub_rev_signed_signed_basic() {
     // a = b - a == 5 - 3 == 2.
     let mut a = [digit(3)];
-    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(5)]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(5)]), idigit(0));
     assert_eq!(a, [digit(2)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(5)];
-    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(3)]), sdigit(-1));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(3)]), idigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 
     // -1 - -1 == 0.
     let mut a = [Digit::MAX];
-    assert_eq!(sub_rev_signed_signed(&mut a, &[Digit::MAX]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[Digit::MAX]), idigit(0));
     assert_eq!(a, [Digit::ZERO]);
 
     // Overflow into the returned digit: 1 - (-2^(bits-1)) == 2^(bits-1) + 1.
     let signed_min = (Digit::MAX >> 1) + digit(1);
     let mut a = [signed_min];
-    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), idigit(0));
     assert_eq!(a, [signed_min + digit(1)]);
 
     // A borrow ripples through the high zero digits: 1 - 2^(2*bits) == -(2^(2*bits) - 1).
     let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
-    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), sdigit(-1));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), idigit(-1));
     assert_eq!(a, [digit(1), Digit::ZERO, Digit::MAX]);
 }
 
@@ -352,22 +352,22 @@ fn sub_rev_signed_signed_rhs_empty() {
 }
 
 #[test]
-fn sub_rev_signed_sdigit_basic() {
+fn sub_rev_signed_idigit_basic() {
     // a = d - a == 5 - 3 == 2.
     let mut a = [digit(3)];
-    assert_eq!(sub_rev_signed_sdigit(&mut a, sdigit(5)), sdigit(0));
+    assert_eq!(sub_rev_signed_idigit(&mut a, idigit(5)), idigit(0));
     assert_eq!(a, [digit(2)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(5)];
-    assert_eq!(sub_rev_signed_sdigit(&mut a, sdigit(3)), sdigit(-1));
+    assert_eq!(sub_rev_signed_idigit(&mut a, idigit(3)), idigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 }
 
 #[test]
 #[should_panic]
-fn sub_rev_signed_sdigit_empty() {
-    sub_rev_signed_sdigit(&mut [], sdigit(1));
+fn sub_rev_signed_idigit_empty() {
+    sub_rev_signed_idigit(&mut [], idigit(1));
 }
 
 proptest! {
@@ -436,7 +436,7 @@ proptest! {
         let carry_1 = add_unsigned_signed(&mut value, &b);
         let carry_2 = sub_unsigned_signed(&mut value, &b);
         prop_assert_eq!(value, a);
-        prop_assert_eq!(carry_1 + carry_2, SignedDigit::ZERO);
+        prop_assert_eq!(carry_1 + carry_2, IDigit::ZERO);
     }
 
     // `sub_rev_unsigned_unsigned_same_len(a, b)` (a = b - a) matches the forward
@@ -499,23 +499,23 @@ proptest! {
         prop_assert_eq!(longer, x);
     }
 
-    // `sub_signed_sdigit` agrees with `sub_signed_signed` of a one-digit slice.
+    // `sub_signed_idigit` agrees with `sub_signed_signed` of a one-digit slice.
     #[test]
-    fn sub_signed_sdigit_matches_signed_signed(a in vec(any::<Digit>(), 1..20), d: SignedDigit) {
+    fn sub_signed_idigit_matches_signed_signed(a in vec(any::<Digit>(), 1..20), d: IDigit) {
         let mut via_digit = a.clone();
         let mut via_slice = a;
-        let high_digit = sub_signed_sdigit(&mut via_digit, d);
+        let high_digit = sub_signed_idigit(&mut via_digit, d);
         let high_slice = sub_signed_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
     }
 
-    // `sub_unsigned_sdigit` agrees with `sub_unsigned_signed` of a one-digit slice.
+    // `sub_unsigned_idigit` agrees with `sub_unsigned_signed` of a one-digit slice.
     #[test]
-    fn sub_unsigned_sdigit_matches_unsigned_signed(a in vec(any::<Digit>(), 1..20), d: SignedDigit) {
+    fn sub_unsigned_idigit_matches_unsigned_signed(a in vec(any::<Digit>(), 1..20), d: IDigit) {
         let mut via_digit = a.clone();
         let mut via_slice = a;
-        let high_digit = sub_unsigned_sdigit(&mut via_digit, d);
+        let high_digit = sub_unsigned_idigit(&mut via_digit, d);
         let high_slice = sub_unsigned_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
@@ -545,15 +545,15 @@ proptest! {
         prop_assert_eq!(via_reverse, shorter_ext);
     }
 
-    // `sub_rev_signed_sdigit` agrees with `sub_rev_signed_signed` of a one-digit slice.
+    // `sub_rev_signed_idigit` agrees with `sub_rev_signed_signed` of a one-digit slice.
     #[test]
-    fn sub_rev_signed_sdigit_matches_signed_signed(
+    fn sub_rev_signed_idigit_matches_signed_signed(
         a in vec(any::<Digit>(), 1..20),
-        d: SignedDigit,
+        d: IDigit,
     ) {
         let mut via_digit = a.clone();
         let mut via_slice = a;
-        let high_digit = sub_rev_signed_sdigit(&mut via_digit, d);
+        let high_digit = sub_rev_signed_idigit(&mut via_digit, d);
         let high_slice = sub_rev_signed_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);

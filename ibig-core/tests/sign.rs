@@ -1,16 +1,16 @@
 //! Integration tests for sign operations.
 
 use ibig_core::{
-    Digit, SignedDigit, extend_signed, extend_signed_bytes, is_negative, neg, sign_extension,
-    sign_extension_byte, sign_extension_sdigit,
+    Digit, IDigit, extend_signed, extend_signed_bytes, is_negative, neg, sign_extension,
+    sign_extension_byte, sign_extension_idigit,
 };
 
 fn digit(n: u8) -> Digit {
     Digit::from(n)
 }
 
-fn sdigit(n: i8) -> SignedDigit {
-    SignedDigit::from(n)
+fn idigit(n: i8) -> IDigit {
+    IDigit::from(n)
 }
 
 #[test]
@@ -40,29 +40,29 @@ fn test_is_negative_empty() {
 fn neg_basic() {
     // 3 negates to -3.
     let mut a = [digit(3)];
-    assert_eq!(neg(&mut a), sdigit(-1));
+    assert_eq!(neg(&mut a), idigit(-1));
     assert_eq!(a, [Digit::MAX - digit(2)]);
 
     // -1 negates to 1.
     let mut a = [Digit::MAX];
-    assert_eq!(neg(&mut a), sdigit(0));
+    assert_eq!(neg(&mut a), idigit(0));
     assert_eq!(a, [digit(1)]);
 
     // 0 negates to 0.
     let mut a = [Digit::ZERO];
-    assert_eq!(neg(&mut a), sdigit(0));
+    assert_eq!(neg(&mut a), idigit(0));
     assert_eq!(a, [Digit::ZERO]);
 
     // The most-negative single digit needs the extra (zero) sign digit: -2^(bits-1) negates to
     // 2^(bits-1), which no longer fits in one signed digit.
     let signed_min = (Digit::MAX >> 1) + digit(1);
     let mut a = [signed_min];
-    assert_eq!(neg(&mut a), sdigit(0));
+    assert_eq!(neg(&mut a), idigit(0));
     assert_eq!(a, [signed_min]);
 
     // Multi-digit: -1 negates to 1.
     let mut a = [Digit::MAX, Digit::MAX];
-    assert_eq!(neg(&mut a), sdigit(0));
+    assert_eq!(neg(&mut a), idigit(0));
     assert_eq!(a, [digit(1), Digit::ZERO]);
 }
 
@@ -139,11 +139,11 @@ fn test_extend_signed_bytes_empty() {
 #[test]
 fn sign_extension_basic() {
     // A negative value extends with all-ones (-1); a non-negative one with zeros.
-    assert_eq!(sign_extension(&[Digit::MAX]), sdigit(-1)); // -1
-    assert_eq!(sign_extension(&[digit(5)]), SignedDigit::ZERO); // +5
+    assert_eq!(sign_extension(&[Digit::MAX]), idigit(-1)); // -1
+    assert_eq!(sign_extension(&[digit(5)]), IDigit::ZERO); // +5
     // The sign comes from the most-significant digit of a multi-digit value.
-    assert_eq!(sign_extension(&[digit(5), Digit::MAX]), sdigit(-1));
-    assert_eq!(sign_extension(&[Digit::MAX, digit(0)]), SignedDigit::ZERO);
+    assert_eq!(sign_extension(&[digit(5), Digit::MAX]), idigit(-1));
+    assert_eq!(sign_extension(&[Digit::MAX, digit(0)]), IDigit::ZERO);
 }
 
 #[test]
@@ -153,14 +153,14 @@ fn sign_extension_empty() {
 }
 
 #[test]
-fn sign_extension_sdigit_basic() {
+fn sign_extension_idigit_basic() {
     // A negative top digit extends with all-ones (-1); a non-negative one with zeros.
-    assert_eq!(sign_extension_sdigit(sdigit(-1)), sdigit(-1));
-    assert_eq!(sign_extension_sdigit(sdigit(5)), SignedDigit::ZERO);
-    assert_eq!(sign_extension_sdigit(SignedDigit::ZERO), SignedDigit::ZERO);
+    assert_eq!(sign_extension_idigit(idigit(-1)), idigit(-1));
+    assert_eq!(sign_extension_idigit(idigit(5)), IDigit::ZERO);
+    assert_eq!(sign_extension_idigit(IDigit::ZERO), IDigit::ZERO);
     // Only the sign bit matters, not the lower bits.
-    assert_eq!(sign_extension_sdigit(SignedDigit::MIN), sdigit(-1));
-    assert_eq!(sign_extension_sdigit(SignedDigit::MAX), SignedDigit::ZERO);
+    assert_eq!(sign_extension_idigit(IDigit::MIN), idigit(-1));
+    assert_eq!(sign_extension_idigit(IDigit::MAX), IDigit::ZERO);
 }
 
 #[test]
