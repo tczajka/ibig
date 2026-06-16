@@ -147,6 +147,21 @@ pub(crate) trait BinaryOpRefCopy {
     fn apply_ref(lhs: &Self::Left, rhs: Self::Right) -> Self::Output;
 }
 
+/// A binary operation where the left operand is owned and the right is a `Copy` value.
+pub(crate) trait BinaryOpValCopy {
+    /// The type of the left operand.
+    type Left;
+
+    /// The type of the right operand.
+    type Right: Copy;
+
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is owned, the right operand a `Copy` value.
+    fn apply_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output;
+}
+
 /// A binary operation where both operands are borrowed.
 pub(crate) trait BinaryOpRef {
     /// The type of the left operand.
@@ -206,6 +221,27 @@ pub(crate) trait BinaryOpRefBigCopy {
 
     /// The left operand is a borrowed slice.
     fn apply_ref(lhs: &[Digit], rhs: Self::Right) -> Self::Output;
+}
+
+/// A binary operation on a big number and a `Copy` right operand, consuming the big number.
+///
+/// The big number appears as either a single digit (`digit`) or an owned buffer (`val`);
+/// the right operand is a `Copy` value.
+pub(crate) trait BinaryOpValBigCopy {
+    /// The type of the left operand.
+    type Left: AsDigits;
+
+    /// The type of the right operand.
+    type Right: Copy;
+
+    /// The type of the result.
+    type Output;
+
+    /// The left operand is a single digit.
+    fn apply_digit(lhs: <Self::Left as AsDigits>::SingleDigit, rhs: Self::Right) -> Self::Output;
+
+    /// The left operand is an owned buffer.
+    fn apply_val(lhs: Digits, rhs: Self::Right) -> Self::Output;
 }
 
 /// A binary operation on big numbers, reading them without consuming them.
@@ -352,6 +388,20 @@ impl<Op: BinaryOpRefBigCopy> BinaryOpRefCopy for Op {
         match lhs.as_digits() {
             Small(a) => <Op as BinaryOpRefBigCopy>::apply_digit(a, rhs),
             Large(a) => <Op as BinaryOpRefBigCopy>::apply_ref(a, rhs),
+        }
+    }
+}
+
+/// Every [`BinaryOpValBigCopy`] induces a [`BinaryOpValCopy`].
+impl<Op: BinaryOpValBigCopy> BinaryOpValCopy for Op {
+    type Left = Op::Left;
+    type Right = Op::Right;
+    type Output = Op::Output;
+
+    fn apply_val(lhs: Self::Left, rhs: Self::Right) -> Self::Output {
+        match lhs.into_digits() {
+            Small(a) => <Op as BinaryOpValBigCopy>::apply_digit(a, rhs),
+            Large(a) => <Op as BinaryOpValBigCopy>::apply_val(a, rhs),
         }
     }
 }

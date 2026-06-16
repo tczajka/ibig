@@ -1,6 +1,9 @@
 //! Bit operations on [`UBig`] and [`IBig`].
 
-use crate::ops::{BinaryOpRefBigCopy, BinaryOpRefCopy, UnaryOpRef, UnaryOpRefBig};
+use crate::ops::{
+    BinaryOpRefBigCopy, BinaryOpRefCopy, BinaryOpValBigCopy, BinaryOpValCopy, UnaryOpRef,
+    UnaryOpRefBig,
+};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -40,11 +43,8 @@ impl UBig {
     /// assert_eq!(a, UBig::from(0b001u8));
     /// ```
     pub fn set_bit(&mut self, index: usize, value: bool) {
-        let index = BitIndex::from(index);
-        *self = match mem::take(self).into_digits() {
-            Small(digit) => UBig::set_bit_digit(digit, index, value),
-            Large(digits) => UBig::set_bit_val(digits, index, value),
-        };
+        let rhs = (BitIndex::from(index), value);
+        *self = <SetBitUBig as BinaryOpValCopy>::apply_val(mem::take(self), rhs);
     }
 
     /// Returns the number of bits needed to represent the value: the position of the
@@ -163,34 +163,6 @@ impl UBig {
     pub fn next_power_of_two(&self) -> UBig {
         <NextPowerOfTwoUBig as UnaryOpRef>::apply_ref(self)
     }
-
-    /// [`UBig::set_bit`] for a single digit.
-    fn set_bit_digit(digit: Digit, index: BitIndex, value: bool) -> UBig {
-        if index.digit_index() == 0 {
-            let mask = Digit::from_u8(1) << index.bit_index();
-            UBig::from_digit(if value { digit | mask } else { digit & !mask })
-        } else if !value {
-            // Bits above the digit are already zero.
-            UBig::from_digit(digit)
-        } else {
-            UBig::set_bit_val(smallvec![digit], index, value)
-        }
-    }
-
-    /// [`UBig::set_bit`] for an owned buffer.
-    ///
-    /// Note: `digits` may contain a single digit here (via `UBig::set_bit_digit`).
-    fn set_bit_val(mut digits: Digits, index: BitIndex, value: bool) -> UBig {
-        if index.digit_index() >= digits.len() {
-            if value {
-                digits.resize(index.digit_index() + 1, Digit::ZERO);
-                ibig_core::set_bit(&mut digits, index, true);
-            }
-        } else {
-            ibig_core::set_bit(&mut digits, index, value);
-        }
-        UBig::from_digits(digits)
-    }
 }
 
 impl IBig {
@@ -230,10 +202,7 @@ impl IBig {
     /// assert_eq!(b, IBig::from(-2i8));
     /// ```
     pub fn set_bit(&mut self, index: usize, value: bool) {
-        *self = match mem::take(self).into_digits() {
-            Small(digit) => IBig::set_bit_digit(digit, index, value),
-            Large(digits) => IBig::set_bit_val(digits, index, value),
-        };
+        *self = <SetBitIBig as BinaryOpValCopy>::apply_val(mem::take(self), (index, value));
     }
 
     /// Returns the base-2 logarithm, rounded down.
@@ -307,45 +276,6 @@ impl IBig {
         <TrailingOnesIBig as UnaryOpRef>::apply_ref(self)
     }
 
-    /// [`IBig::set_bit`] for a single digit.
-    fn set_bit_digit(digit: SignedDigit, index: usize, value: bool) -> IBig {
-        if index < DIGIT_BITS_USIZE - 1 {
-            let mask = SignedDigit::from_i8(1) << index;
-            IBig::from_digit(if value { digit | mask } else { digit & !mask })
-        } else if value == digit.is_negative() {
-            // The bit already reads as `value` via sign extension.
-            IBig::from_digit(digit)
-        } else {
-            IBig::set_bit_val(smallvec![digit.cast_unsigned()], index, value)
-        }
-    }
-
-    /// [`IBig::set_bit`] for an owned buffer.
-    ///
-    /// Note: `digits` may contain a single digit here (via `IBig::set_bit_digit`).
-    fn set_bit_val(mut digits: Digits, index: usize, value: bool) -> IBig {
-        // Number of digits needed for the modified bit to sit strictly below the sign bit,
-        // i.e. the smallest `min_len` with `index < min_len * DIGIT_BITS_USIZE - 1`. This is
-        // `digit_index + 1`, plus one more digit when the bit is the top bit of its digit (so it
-        // would otherwise land on the sign bit). Avoids `index + 1` overflowing.
-        let index = BitIndex::from(index);
-        let min_len = index.digit_index()
-            + 1
-            + (usize::try_from(index.bit_index()).unwrap() + 1) / DIGIT_BITS_USIZE;
-
-        let len = digits.len();
-        if len < min_len {
-            if value == ibig_core::is_negative(&digits) {
-                // The bit already reads as `value` via sign extension.
-                return IBig::from_digits(digits);
-            }
-            digits.resize(min_len, Digit::ZERO);
-            ibig_core::extend_signed(&mut digits, len);
-        }
-        ibig_core::set_bit(&mut digits, index, value);
-        IBig::from_digits(digits)
-    }
-
     /// [`IBig::checked_ilog2`] for a borrowed slice.
     fn checked_ilog2_ref(digits: &[Digit]) -> Option<usize> {
         if ibig_core::is_negative(digits) {
@@ -373,6 +303,39 @@ impl BinaryOpRefBigCopy for BitUBig {
 
     fn apply_ref(lhs: &[Digit], rhs: usize) -> bool {
         ibig_core::bit_unsigned(lhs, BitIndex::from(rhs))
+    }
+}
+
+/// The [`UBig::set_bit`] operation.
+enum SetBitUBig {}
+
+impl BinaryOpValBigCopy for SetBitUBig {
+    type Left = UBig;
+    type Right = (BitIndex, bool);
+    type Output = UBig;
+
+    fn apply_digit(digit: Digit, (index, value): (BitIndex, bool)) -> UBig {
+        if index.digit_index() == 0 {
+            let mask = Digit::from_u8(1) << index.bit_index();
+            UBig::from_digit(if value { digit | mask } else { digit & !mask })
+        } else if !value {
+            // Bits above the digit are already zero.
+            UBig::from_digit(digit)
+        } else {
+            <Self as BinaryOpValBigCopy>::apply_val(smallvec![digit], (index, value))
+        }
+    }
+
+    fn apply_val(mut digits: Digits, (index, value): (BitIndex, bool)) -> UBig {
+        if index.digit_index() >= digits.len() {
+            if value {
+                digits.resize(index.digit_index() + 1, Digit::ZERO);
+                ibig_core::set_bit(&mut digits, index, true);
+            }
+        } else {
+            ibig_core::set_bit(&mut digits, index, value);
+        }
+        UBig::from_digits(digits)
     }
 }
 
@@ -515,6 +478,53 @@ impl BinaryOpRefBigCopy for BitIBig {
 
     fn apply_ref(lhs: &[Digit], rhs: usize) -> bool {
         ibig_core::bit_signed(lhs, BitIndex::from(rhs))
+    }
+}
+
+/// The [`IBig::set_bit`] operation.
+enum SetBitIBig {}
+
+impl BinaryOpValBigCopy for SetBitIBig {
+    type Left = IBig;
+    type Right = (usize, bool);
+    type Output = IBig;
+
+    fn apply_digit(digit: SignedDigit, (index, value): (usize, bool)) -> IBig {
+        if index < DIGIT_BITS_USIZE - 1 {
+            let mask = SignedDigit::from_i8(1) << index;
+            IBig::from_digit(if value { digit | mask } else { digit & !mask })
+        } else if value == digit.is_negative() {
+            // The bit already reads as `value` via sign extension.
+            IBig::from_digit(digit)
+        } else {
+            <Self as BinaryOpValBigCopy>::apply_val(
+                smallvec![digit.cast_unsigned()],
+                (index, value),
+            )
+        }
+    }
+
+    fn apply_val(mut digits: Digits, (index, value): (usize, bool)) -> IBig {
+        // Number of digits needed for the modified bit to sit strictly below the sign bit,
+        // i.e. the smallest `min_len` with `index < min_len * DIGIT_BITS_USIZE - 1`. This is
+        // `digit_index + 1`, plus one more digit when the bit is the top bit of its digit (so it
+        // would otherwise land on the sign bit). Avoids `index + 1` overflowing.
+        let index = BitIndex::from(index);
+        let min_len = index.digit_index()
+            + 1
+            + (usize::try_from(index.bit_index()).unwrap() + 1) / DIGIT_BITS_USIZE;
+
+        let len = digits.len();
+        if len < min_len {
+            if value == ibig_core::is_negative(&digits) {
+                // The bit already reads as `value` via sign extension.
+                return IBig::from_digits(digits);
+            }
+            digits.resize(min_len, Digit::ZERO);
+            ibig_core::extend_signed(&mut digits, len);
+        }
+        ibig_core::set_bit(&mut digits, index, value);
+        IBig::from_digits(digits)
     }
 }
 
