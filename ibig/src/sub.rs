@@ -89,11 +89,8 @@ impl BinaryOpRefValBigBig for SubUBigUBig {
     type Output = UBig;
 
     fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
-        let (diff, borrow) = lhs.overflowing_sub(rhs);
-        if borrow {
-            UBig::panic_negative();
-        }
-        UBig::from_digit(diff)
+        <CheckedSubUBigUBig as BinaryOpRefBigBig>::apply_digit_digit(lhs, rhs)
+            .unwrap_or_else(|| UBig::panic_negative())
     }
 
     fn apply_digit_ref(_lhs: Digit, _rhs: &[Digit]) -> UBig {
@@ -111,11 +108,8 @@ impl BinaryOpRefValBigBig for SubUBigUBig {
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
-        // Check the lengths before cloning a result that would only be discarded.
-        if lhs.len() < rhs.len() {
-            UBig::panic_negative();
-        }
-        Self::apply_val_ref(Digits::from_slice(lhs), rhs)
+        <CheckedSubUBigUBig as BinaryOpRefBigBig>::apply_ref_ref(lhs, rhs)
+            .unwrap_or_else(|| UBig::panic_negative())
     }
 
     fn apply_ref_val(lhs: &[Digit], mut rhs: Digits) -> UBig {
