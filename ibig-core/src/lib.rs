@@ -55,7 +55,8 @@ pub use sign::{
 pub use sub::{
     sub_reverse_signed_sdigit, sub_reverse_signed_signed, sub_reverse_unsigned_unsigned_same_len,
     sub_signed_sdigit, sub_signed_signed, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
-    sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,
+    sub_unsigned_sdigit, sub_unsigned_signed, sub_unsigned_unsigned,
+    sub_unsigned_unsigned_same_len,
 };
 use unative::{INative, UNative};
 
