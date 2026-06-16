@@ -6,7 +6,7 @@ use crate::ops::{
 use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{Add, AddAssign};
-use ibig_core::{Digit, IDigit, sign_extension, sign_extension_idigit};
+use ibig_core::{Digit, IDigit, sign_extension};
 
 impl UBig {
     /// Adds the signed `rhs` to `self`, returning `None` if the result would be negative.
@@ -259,13 +259,8 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
     type Output = IBig;
 
     fn apply_digit_digit(lhs: IDigit, rhs: IDigit) -> IBig {
-        let (sum, overflow) = lhs.overflowing_add(rhs);
-        if overflow {
-            // On overflow `lhs` and `rhs` share a sign, which is the sign of the two-digit result.
-            IBig::from_two_digits(sum.cast_unsigned(), sign_extension_idigit(lhs))
-        } else {
-            IBig::from_digit(sum)
-        }
+        let (low, icarry) = ibig_core::add_idigit_idigit(lhs, rhs);
+        IBig::from_two_digits(low, icarry)
     }
 
     fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> IBig {

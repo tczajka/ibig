@@ -1,8 +1,8 @@
 //! Integration tests for addition.
 
 use ibig_core::{
-    Digit, IDigit, add_digit_idigit, add_signed_digit, add_signed_idigit, add_signed_signed,
-    add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
+    Digit, IDigit, add_digit_idigit, add_idigit_idigit, add_signed_digit, add_signed_idigit,
+    add_signed_signed, add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
     add_unsigned_icarry, add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
     add_unsigned_unsigned_same_len, extend_signed,
 };
@@ -348,6 +348,39 @@ fn add_digit_idigit_basic() {
 }
 
 #[test]
+fn add_idigit_idigit_basic() {
+    // 2 + 3 == 5, no carry.
+    assert_eq!(
+        add_idigit_idigit(idigit(2), idigit(3)),
+        (digit(5), idigit(0))
+    );
+
+    // 1 + -1 == 0.
+    assert_eq!(
+        add_idigit_idigit(idigit(1), idigit(-1)),
+        (Digit::ZERO, idigit(0))
+    );
+
+    // -1 + -1 == -2: the low digit wraps and the carry is -1.
+    assert_eq!(
+        add_idigit_idigit(idigit(-1), idigit(-1)),
+        (Digit::MAX - digit(1), idigit(-1))
+    );
+
+    // Two large positives overflow the signed range but stay non-negative: carry 0.
+    assert_eq!(
+        add_idigit_idigit(IDigit::MAX, IDigit::MAX),
+        (Digit::MAX - digit(1), idigit(0))
+    );
+
+    // The two most-negative digits sum to -2^bits: low digit 0, carry -1.
+    assert_eq!(
+        add_idigit_idigit(IDigit::MIN, IDigit::MIN),
+        (Digit::ZERO, idigit(-1))
+    );
+}
+
+#[test]
 fn add_signed_digit_basic() {
     // -1 + 5 == 4.
     let mut a = [Digit::MAX];
@@ -524,6 +557,16 @@ proptest! {
         let (low, carry) = add_digit_idigit(a, d);
         let mut slice = [a];
         let slice_carry = add_unsigned_idigit(&mut slice, d);
+        prop_assert_eq!(low, slice[0]);
+        prop_assert_eq!(carry, slice_carry);
+    }
+
+    // `add_idigit_idigit(a, d)` agrees with `add_signed_signed` on the one-digit slices `[a]`, `[d]`.
+    #[test]
+    fn add_idigit_idigit_matches_signed_signed(a: IDigit, d: IDigit) {
+        let (low, carry) = add_idigit_idigit(a, d);
+        let mut slice = [a.cast_unsigned()];
+        let slice_carry = add_signed_signed(&mut slice, &[d.cast_unsigned()]);
         prop_assert_eq!(low, slice[0]);
         prop_assert_eq!(carry, slice_carry);
     }

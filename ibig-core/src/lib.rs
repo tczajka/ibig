@@ -30,9 +30,9 @@ mod sign;
 mod sub;
 
 pub use add::{
-    add_digit_idigit, add_signed_digit, add_signed_idigit, add_signed_signed, add_signed_unsigned,
-    add_unsigned_1, add_unsigned_carry, add_unsigned_digit, add_unsigned_icarry,
-    add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
+    add_digit_idigit, add_idigit_idigit, add_signed_digit, add_signed_idigit, add_signed_signed,
+    add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
+    add_unsigned_icarry, add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
     add_unsigned_unsigned_same_len,
 };
 pub use bits::{
