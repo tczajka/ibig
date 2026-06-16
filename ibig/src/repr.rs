@@ -123,6 +123,15 @@ impl UBig {
         }
     }
 
+    /// Constructs a [`UBig`] from the single digit `low` topped by a signed carry `icarry`,
+    /// returning `None` when `icarry` is negative (the value would be negative).
+    pub(crate) fn try_from_digit_icarry(low: Digit, icarry: IDigit) -> Option<UBig> {
+        // A non-negative `icarry` is the 0-or-1 high digit; a negative one is not a valid `bool`,
+        // so the conversion fails and `?` returns `None`.
+        let high = bool::try_from(icarry).ok()?;
+        Some(UBig::from_two_digits(low, Digit::from(high)))
+    }
+
     /// Constructs a [`UBig`] from `digits` topped by a signed carry `icarry`, returning `None`
     /// when `icarry` is negative (the value would be negative).
     pub(crate) fn try_from_digits_icarry(digits: Digits, icarry: IDigit) -> Option<UBig> {

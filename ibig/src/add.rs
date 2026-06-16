@@ -152,12 +152,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
 
     fn apply_digit_digit(lhs: Digit, rhs: IDigit) -> Option<UBig> {
         let (low, icarry) = ibig_core::add_digit_idigit(lhs, rhs);
-        if icarry.is_negative() {
-            // The result is negative.
-            None
-        } else {
-            Some(UBig::from_two_digits(low, icarry.cast_unsigned()))
-        }
+        UBig::try_from_digit_icarry(low, icarry)
     }
 
     fn apply_digit_ref(lhs: Digit, rhs: &[Digit]) -> Option<UBig> {
