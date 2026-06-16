@@ -18,6 +18,9 @@ API changes.
 - `UBig::checked_add_signed`.
 - `UBig::strict_add_signed`.
 - `UBig::saturating_add_signed`.
+- `UBig::checked_sub_signed`.
+- `UBig::strict_sub_signed`.
+- `UBig::saturating_sub_signed`.
 - `IBig::add_unsigned`.
 - `UBig::bit_and_not`.
 

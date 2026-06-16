@@ -75,6 +75,28 @@ proptest! {
         prop_assert_eq!(&a - &a, IBig::ZERO);
         prop_assert_eq!(&a - &b, &a + (-&b));
     }
+
+    // `UBig::checked_sub_signed` equals `a - b` when non-negative, else `None`.
+    #[test]
+    fn ubig_checked_sub_signed_vs_ibig(a in ubig_up_to_bits(300), b in ibig_up_to_bits(300)) {
+        let diff = IBig::from(&a) - &b;
+        prop_assert_eq!(a.checked_sub_signed(&b), UBig::try_from(&diff).ok());
+    }
+
+    // `UBig::saturating_sub_signed` equals `a - b` clamped at zero.
+    #[test]
+    fn ubig_saturating_sub_signed_vs_ibig(a in ubig_up_to_bits(300), b in ibig_up_to_bits(300)) {
+        let diff = IBig::from(&a) - &b;
+        prop_assert_eq!(a.saturating_sub_signed(&b), UBig::try_from(&diff).unwrap_or(UBig::ZERO));
+    }
+
+    // `UBig::strict_sub_signed` agrees with `checked_sub_signed` whenever the result exists.
+    #[test]
+    fn ubig_strict_sub_signed_matches_checked(a in ubig_up_to_bits(300), b in ibig_up_to_bits(300)) {
+        if let Some(expected) = a.checked_sub_signed(&b) {
+            prop_assert_eq!(a.strict_sub_signed(&b), expected);
+        }
+    }
 }
 
 #[test]
@@ -162,6 +184,83 @@ fn ubig_saturating_sub_basic() {
         (&big + UBig::from(7u8)).saturating_sub(&UBig::from(7u8)),
         big
     );
+}
+
+#[test]
+fn ubig_checked_sub_signed_basic() {
+    // Single-digit cases.
+    assert_eq!(
+        UBig::from(5u8).checked_sub_signed(&IBig::from(3)),
+        Some(UBig::from(2u8))
+    );
+    // Subtracting a negative adds.
+    assert_eq!(
+        UBig::from(5u8).checked_sub_signed(&IBig::from(-3)),
+        Some(UBig::from(8u8))
+    );
+    assert_eq!(
+        UBig::from(5u8).checked_sub_signed(&IBig::from(5)),
+        Some(UBig::ZERO)
+    );
+    // A negative result.
+    assert_eq!(UBig::from(5u8).checked_sub_signed(&IBig::from(8)), None);
+    // `self` shorter than a positive `rhs`.
+    assert_eq!(
+        UBig::from(3u8).checked_sub_signed(&(IBig::from(1) << 200)),
+        None
+    );
+
+    // A borrow shrinks the value by a digit: 2^256 - 1.
+    let big = UBig::from(1u8) << 256;
+    assert_eq!(
+        big.checked_sub_signed(&IBig::from(1)),
+        Some(&big - UBig::from(1u8))
+    );
+    // A large negative `rhs` grows the value: 2^256 - -(2^100) == 2^256 + 2^100.
+    assert_eq!(
+        big.checked_sub_signed(&(IBig::from(-1) << 100)),
+        Some(&big + (UBig::from(1u8) << 100))
+    );
+}
+
+#[test]
+fn ubig_saturating_sub_signed_basic() {
+    assert_eq!(
+        UBig::from(5u8).saturating_sub_signed(&IBig::from(3)),
+        UBig::from(2u8)
+    );
+    // Subtracting a negative adds.
+    assert_eq!(
+        UBig::from(5u8).saturating_sub_signed(&IBig::from(-3)),
+        UBig::from(8u8)
+    );
+    // The result saturates at zero rather than going negative.
+    assert_eq!(
+        UBig::from(5u8).saturating_sub_signed(&IBig::from(8)),
+        UBig::ZERO
+    );
+    assert_eq!(
+        UBig::from(3u8).saturating_sub_signed(&(IBig::from(1) << 200)),
+        UBig::ZERO
+    );
+}
+
+#[test]
+fn ubig_strict_sub_signed_basic() {
+    assert_eq!(
+        UBig::from(5u8).strict_sub_signed(&IBig::from(3)),
+        UBig::from(2u8)
+    );
+    assert_eq!(
+        UBig::from(5u8).strict_sub_signed(&IBig::from(-3)),
+        UBig::from(8u8)
+    );
+}
+
+#[test]
+#[should_panic(expected = "negative UBig")]
+fn ubig_strict_sub_signed_negative() {
+    UBig::from(5u8).strict_sub_signed(&IBig::from(8));
 }
 
 #[test]

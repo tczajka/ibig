@@ -55,7 +55,7 @@ impl UBig {
 
     /// Constructs a [`UBig`] from `digits` topped by a signed carry `scarry`, returning `None`
     /// when `scarry` is negative (the value would be negative).
-    fn try_from_digits_scarry(digits: Digits, scarry: SignedDigit) -> Option<UBig> {
+    pub(crate) fn try_from_digits_scarry(digits: Digits, scarry: SignedDigit) -> Option<UBig> {
         // A non-negative `scarry` is the 0-or-1 carry above `digits`; a negative one is not a
         // valid `bool`, so the conversion fails and `?` returns `None`.
         let carry = bool::try_from(scarry).ok()?;
