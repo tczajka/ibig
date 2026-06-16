@@ -2,7 +2,7 @@
 
 use ibig_core::{
     Digit, IDigit, add_signed_signed, add_unsigned_signed, add_unsigned_unsigned, extend_signed,
-    neg, sign_extension, sub_rev_signed_idigit, sub_rev_signed_signed,
+    neg, sign_extension, sub_digit_idigit, sub_rev_signed_idigit, sub_rev_signed_signed,
     sub_rev_unsigned_unsigned_same_len, sub_signed_idigit, sub_signed_signed, sub_unsigned_1,
     sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_idigit, sub_unsigned_signed,
     sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,
@@ -202,6 +202,36 @@ fn sub_unsigned_idigit_basic() {
 #[should_panic]
 fn sub_unsigned_idigit_empty() {
     sub_unsigned_idigit(&mut [], idigit(1));
+}
+
+#[test]
+fn sub_digit_idigit_basic() {
+    // 5 - 3 == 2, no carry.
+    assert_eq!(sub_digit_idigit(digit(5), idigit(3)), (digit(2), idigit(0)));
+
+    // 5 - -3 == 8, no carry.
+    assert_eq!(
+        sub_digit_idigit(digit(5), idigit(-3)),
+        (digit(8), idigit(0))
+    );
+
+    // 0 - 1 == -1: the low digit wraps and the carry is -1.
+    assert_eq!(
+        sub_digit_idigit(Digit::ZERO, idigit(1)),
+        (Digit::MAX, idigit(-1))
+    );
+
+    // (2^bits - 1) - -1 == 2^bits: carry +1.
+    assert_eq!(
+        sub_digit_idigit(Digit::MAX, idigit(-1)),
+        (Digit::ZERO, idigit(1))
+    );
+
+    // The most-negative idigit subtracted from MAX still carries only +1.
+    assert_eq!(
+        sub_digit_idigit(Digit::MAX, IDigit::MIN),
+        (IDigit::MAX.cast_unsigned(), idigit(1))
+    );
 }
 
 #[test]
@@ -519,6 +549,16 @@ proptest! {
         let high_slice = sub_unsigned_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
+    }
+
+    // `sub_digit_idigit(a, d)` agrees with `sub_unsigned_idigit` on the one-digit slice `[a]`.
+    #[test]
+    fn sub_digit_idigit_matches_unsigned_idigit(a: Digit, d: IDigit) {
+        let (low, carry) = sub_digit_idigit(a, d);
+        let mut slice = [a];
+        let slice_carry = sub_unsigned_idigit(&mut slice, d);
+        prop_assert_eq!(low, slice[0]);
+        prop_assert_eq!(carry, slice_carry);
     }
 
     // `sub_rev_signed_signed(a, b)` (a = b - a) matches the forward `sub_signed_signed`

@@ -198,15 +198,12 @@ impl BinaryOpRefBigBig for CheckedSubUBigIBig {
     type Output = Option<UBig>;
 
     fn apply_digit_digit(lhs: Digit, rhs: IDigit) -> Option<UBig> {
-        let (diff, overflow) = lhs.overflowing_sub_signed(rhs);
-        if !overflow {
-            Some(UBig::from_digit(diff))
-        } else if rhs.is_negative() {
-            // Subtracting a negative overflowed a single digit into a most-significant `1`.
-            Some(UBig::from_two_digits(diff, Digit::from(1u8)))
-        } else {
+        let (low, icarry) = ibig_core::sub_digit_idigit(lhs, rhs);
+        if icarry.is_negative() {
             // The result is negative.
             None
+        } else {
+            Some(UBig::from_two_digits(low, icarry.cast_unsigned()))
         }
     }
 

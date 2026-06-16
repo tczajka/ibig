@@ -181,6 +181,37 @@ pub fn sub_unsigned_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     add_unsigned_icarry(high, low_carry)
 }
 
+/// Subtracts the signed digit `rhs` from the unsigned digit `lhs`, returning the low digit and
+/// the signed carry (-1, 0, or 1) above it.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, sub_digit_idigit};
+/// // 5 - 3 == 2, no carry.
+/// assert_eq!(
+///     sub_digit_idigit(Digit::from(5u8), IDigit::from(3i8)),
+///     (Digit::from(2u8), IDigit::ZERO)
+/// );
+///
+/// // 0 - 1 == -1: the low digit wraps and the carry is -1.
+/// assert_eq!(
+///     sub_digit_idigit(Digit::ZERO, IDigit::from(1i8)),
+///     (Digit::MAX, IDigit::from(-1i8))
+/// );
+///
+/// // (2^bits - 1) - -1 == 2^bits carries out into a +1.
+/// assert_eq!(
+///     sub_digit_idigit(Digit::MAX, IDigit::from(-1i8)),
+///     (Digit::ZERO, IDigit::from(1i8))
+/// );
+/// ```
+pub fn sub_digit_idigit(lhs: Digit, rhs: IDigit) -> (Digit, IDigit) {
+    let (low, borrow) = lhs.overflowing_sub(rhs.cast_unsigned());
+    let icarry = -IDigit::from(borrow) - sign_extension_idigit(rhs);
+    (low, icarry)
+}
+
 /// Subtracts the signed `rhs` from the signed `lhs` in place, returning the signed carry
 /// (0 or -1).
 ///
