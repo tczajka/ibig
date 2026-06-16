@@ -1,6 +1,5 @@
 //! Sign and sign-extension of signed digit and byte slices.
 
-use crate::add::add_unsigned_1;
 use crate::{Digit, SignedDigit, not};
 
 /// Returns `true` if the non-empty signed `digits` represent a negative value (the
@@ -22,11 +21,7 @@ pub const fn is_negative(digits: &[Digit]) -> bool {
     digits.last().unwrap().cast_signed().is_negative()
 }
 
-/// Negates the signed value in the non-empty `digits` in place, returning a sign digit (0 or -1)
-/// that should be appended to `digits`.
-///
-/// The extra digit is needed because negating the most-negative value does not fit in the same
-/// number of digits.
+/// Negates the signed value in the non-empty `digits` in place, returning a signed carry (0 or -1).
 ///
 /// # Panics
 ///
@@ -43,11 +38,17 @@ pub const fn is_negative(digits: &[Digit]) -> bool {
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
 pub fn neg(digits: &mut [Digit]) -> SignedDigit {
-    // -x == !x + 1.
-    not(digits);
-    let extension = sign_extension(digits);
-    let carry = add_unsigned_1(digits);
-    extension + SignedDigit::from(carry)
+    assert!(!digits.is_empty(), "signed digits are empty");
+    // Skip zeros.
+    let Some(index) = digits.iter().position(|&d| d != Digit::ZERO) else {
+        return SignedDigit::ZERO;
+    };
+    let high = &mut digits[index..];
+    let extension = sign_extension(high);
+    let (mid, high) = high.split_first_mut().unwrap();
+    *mid = mid.wrapping_neg();
+    not(high);
+    !extension
 }
 
 /// Sign-extends the signed value held in `digits[..len]` to fill the rest of
