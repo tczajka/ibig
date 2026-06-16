@@ -1,14 +1,10 @@
 //! Bitwise operators for [`UBig`] and [`IBig`].
 
 use crate::ops::{
-    BigBig, CommutativeBinaryOpRefValBigBig, UnaryOpRefValBig, impl_binary_operator,
-    impl_unary_operator,
+    BigBig, BinaryOpRef, BinaryOpRefBigBig, CommutativeBinaryOpRefValBigBig, UnaryOpRefValBig,
+    impl_binary_operator, impl_unary_operator,
 };
-use crate::repr::{
-    AsDigits,
-    AsDigitsResult::{Large, Small},
-    Digits,
-};
+use crate::repr::Digits;
 use crate::{IBig, UBig};
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use ibig_core::{Digit, SignedDigit};
@@ -25,28 +21,38 @@ impl UBig {
     /// ```
     /// # use ibig::UBig;
     /// assert_eq!(
-    ///     UBig::from(0b1110u8).bitandnot(&UBig::from(0b0101u8)),
+    ///     UBig::from(0b1110u8).bit_and_not(&UBig::from(0b0101u8)),
     ///     UBig::from(0b1010u8)
     /// );
     /// ```
-    pub fn bitandnot(&self, rhs: &UBig) -> UBig {
-        match (self.as_digits(), rhs.as_digits()) {
-            (Small(a), Small(b)) => UBig::from_digit(a & !b),
-            (Small(a), Large(rhs)) => UBig::from_digit(a & !rhs[0]),
-            (Large(lhs), Small(b)) => UBig::bitandnot_ref_digit(lhs, b),
-            (Large(lhs), Large(rhs)) => UBig::bitandnot_ref_ref(lhs, rhs),
-        }
+    pub fn bit_and_not(&self, rhs: &UBig) -> UBig {
+        <BitAndNotUBigUBig as BinaryOpRef>::apply_ref_ref(self, rhs)
+    }
+}
+
+/// The [`UBig::bit_and_not`] operation.
+enum BitAndNotUBigUBig {}
+
+impl BinaryOpRefBigBig for BitAndNotUBigUBig {
+    type Left = UBig;
+    type Right = UBig;
+    type Output = UBig;
+
+    fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
+        UBig::from_digit(lhs & !rhs)
     }
 
-    /// [`UBig::bitandnot`] for a borrowed slice and a single digit.
-    fn bitandnot_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
+    fn apply_digit_ref(lhs: Digit, rhs: &[Digit]) -> UBig {
+        UBig::from_digit(lhs & !rhs[0])
+    }
+
+    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
         let mut digits = Digits::from_slice(lhs);
         digits[0] &= !rhs;
         UBig::from_digits(digits)
     }
 
-    /// [`UBig::bitandnot`] for two borrowed slices.
-    fn bitandnot_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
         let mut digits = Digits::from_slice(lhs);
         let n = digits.len().min(rhs.len());
         ibig_core::bitandnot_same_len(&mut digits[..n], &rhs[..n]);

@@ -108,30 +108,30 @@ proptest! {
         prop_assert_eq!(&a ^ &b, expected);
     }
 
-    // `UBig::bitandnot(a, b) == a & !b`, for every pair of `u16`/`u128` operand widths.
+    // `UBig::bit_and_not(a, b) == a & !b`, for every pair of `u16`/`u128` operand widths.
     #[test]
-    fn ubig_bitandnot_16_16(a: u16, b: u16) {
-        prop_assert_eq!(UBig::from(a).bitandnot(&UBig::from(b)), UBig::from(a & !b));
+    fn ubig_bit_and_not_16_16(a: u16, b: u16) {
+        prop_assert_eq!(UBig::from(a).bit_and_not(&UBig::from(b)), UBig::from(a & !b));
     }
 
     #[test]
-    fn ubig_bitandnot_16_128(a: u16, b: u128) {
-        prop_assert_eq!(UBig::from(a).bitandnot(&UBig::from(b)), UBig::from(u128::from(a) & !b));
+    fn ubig_bit_and_not_16_128(a: u16, b: u128) {
+        prop_assert_eq!(UBig::from(a).bit_and_not(&UBig::from(b)), UBig::from(u128::from(a) & !b));
     }
 
     #[test]
-    fn ubig_bitandnot_128_16(a: u128, b: u16) {
-        prop_assert_eq!(UBig::from(a).bitandnot(&UBig::from(b)), UBig::from(a & !u128::from(b)));
+    fn ubig_bit_and_not_128_16(a: u128, b: u16) {
+        prop_assert_eq!(UBig::from(a).bit_and_not(&UBig::from(b)), UBig::from(a & !u128::from(b)));
     }
 
     #[test]
-    fn ubig_bitandnot_128_128(a: u128, b: u128) {
-        prop_assert_eq!(UBig::from(a).bitandnot(&UBig::from(b)), UBig::from(a & !b));
+    fn ubig_bit_and_not_128_128(a: u128, b: u128) {
+        prop_assert_eq!(UBig::from(a).bit_and_not(&UBig::from(b)), UBig::from(a & !b));
     }
 
-    // `UBig::bitandnot` agrees with the signed `a & !b`.
+    // `UBig::bit_and_not` agrees with the signed `a & !b`.
     #[test]
-    fn ubig_bitandnot_vs_signed(a in ubig_up_to_bits(1000), b in ubig_up_to_bits(1000)) {
-        prop_assert_eq!(IBig::from(&a.bitandnot(&b)), IBig::from(&a) & !IBig::from(&b));
+    fn ubig_bit_and_not_vs_signed(a in ubig_up_to_bits(1000), b in ubig_up_to_bits(1000)) {
+        prop_assert_eq!(IBig::from(&a.bit_and_not(&b)), IBig::from(&a) & !IBig::from(&b));
     }
 }
