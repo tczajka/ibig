@@ -10,19 +10,6 @@ use crate::{IBig, TryFromBigError, UBig};
 use core::num::TryFromIntError;
 use ibig_core::{Digit, SignedDigit};
 
-/// Forwards `TryFrom<$to> for $from` to the by-reference conversion.
-macro_rules! try_from_big_value {
-    ($to:ty, $from:ty) => {
-        impl TryFrom<$from> for $to {
-            type Error = TryFromBigError;
-
-            fn try_from(value: $from) -> Result<Self, TryFromBigError> {
-                Self::try_from(&value)
-            }
-        }
-    };
-}
-
 impl UBig {
     /// Constructs from a `u8` in a `const` context.
     ///
@@ -57,6 +44,55 @@ impl UBig {
             None => UBig::const_from_le_bytes(&value.to_le_bytes()),
         }
     }
+}
+
+impl IBig {
+    /// Constructs from an `i8` in a `const` context.
+    ///
+    /// Outside of `const` contexts, use [`From`].
+    pub const fn const_from_i8(value: i8) -> IBig {
+        IBig::const_from_digit(SignedDigit::from_i8(value))
+    }
+
+    /// Constructs from an `i16` in a `const` context.
+    ///
+    /// Outside of `const` contexts, use [`From`].
+    pub const fn const_from_i16(value: i16) -> IBig {
+        IBig::const_from_digit(SignedDigit::from_i16(value))
+    }
+
+    /// Constructs from an `i32` in a `const` context.
+    ///
+    /// Outside of `const` contexts, use [`From`].
+    pub const fn const_from_i32(value: i32) -> IBig {
+        match SignedDigit::try_from_i32(value) {
+            Some(digit) => IBig::const_from_digit(digit),
+            None => IBig::const_from_le_bytes(&value.to_le_bytes()),
+        }
+    }
+
+    /// Constructs from an `i64` in a `const` context.
+    ///
+    /// Outside of `const` contexts, use [`From`].
+    pub const fn const_from_i64(value: i64) -> IBig {
+        match SignedDigit::try_from_i64(value) {
+            Some(digit) => IBig::const_from_digit(digit),
+            None => IBig::const_from_le_bytes(&value.to_le_bytes()),
+        }
+    }
+}
+
+/// Forwards `TryFrom<$to> for $from` to the by-reference conversion.
+macro_rules! try_from_big_value {
+    ($to:ty, $from:ty) => {
+        impl TryFrom<$from> for $to {
+            type Error = TryFromBigError;
+
+            fn try_from(value: $from) -> Result<Self, TryFromBigError> {
+                Self::try_from(&value)
+            }
+        }
+    };
 }
 
 /// Implements `From<$t> for UBig` for an unsigned primitive: a value that fits in a single
@@ -218,42 +254,6 @@ impl TryFrom<&UBig> for bool {
 }
 
 try_from_big_value!(bool, UBig);
-
-impl IBig {
-    /// Constructs from an `i8` in a `const` context.
-    ///
-    /// Outside of `const` contexts, use [`From`].
-    pub const fn const_from_i8(value: i8) -> IBig {
-        IBig::const_from_digit(SignedDigit::from_i8(value))
-    }
-
-    /// Constructs from an `i16` in a `const` context.
-    ///
-    /// Outside of `const` contexts, use [`From`].
-    pub const fn const_from_i16(value: i16) -> IBig {
-        IBig::const_from_digit(SignedDigit::from_i16(value))
-    }
-
-    /// Constructs from an `i32` in a `const` context.
-    ///
-    /// Outside of `const` contexts, use [`From`].
-    pub const fn const_from_i32(value: i32) -> IBig {
-        match SignedDigit::try_from_i32(value) {
-            Some(digit) => IBig::const_from_digit(digit),
-            None => IBig::const_from_le_bytes(&value.to_le_bytes()),
-        }
-    }
-
-    /// Constructs from an `i64` in a `const` context.
-    ///
-    /// Outside of `const` contexts, use [`From`].
-    pub const fn const_from_i64(value: i64) -> IBig {
-        match SignedDigit::try_from_i64(value) {
-            Some(digit) => IBig::const_from_digit(digit),
-            None => IBig::const_from_le_bytes(&value.to_le_bytes()),
-        }
-    }
-}
 
 /// Implements `From<$t> for IBig` for a signed primitive: a value that fits in a single
 /// digit takes the fast path, otherwise it goes through the little-endian bytes.
