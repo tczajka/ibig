@@ -4,29 +4,6 @@ use crate::add::add_unsigned_scarry;
 use crate::{Digit, SignedDigit, not, sign_extension, sign_extension_sdigit};
 
 /// Subtracts `rhs` from `lhs` in place, returning the borrow out of the most-significant digit.
-///
-/// `rhs` must not be longer than `lhs`.
-///
-/// # Panics
-///
-/// Panics if `rhs` is longer than `lhs`.
-///
-/// # Examples
-///
-/// ```
-/// # use ibig_core::{Digit, sub_unsigned_unsigned};
-/// let mut a = [Digit::ZERO, Digit::from(3u8)];
-/// let borrow = sub_unsigned_unsigned(&mut a, &[Digit::from(1u8)]);
-/// assert_eq!(a, [Digit::MAX, Digit::from(2u8)]);
-/// assert!(!borrow);
-/// ```
-pub fn sub_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
-    let (low, high) = lhs.split_at_mut(rhs.len());
-    let borrow = sub_unsigned_unsigned_same_len(low, rhs);
-    sub_unsigned_borrow(high, borrow)
-}
-
-/// Subtracts `rhs` from `lhs` in place, returning the borrow out of the most-significant digit.
 /// The slices must have the same length.
 ///
 /// # Panics
@@ -53,32 +30,27 @@ pub fn sub_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> bool 
     borrow
 }
 
-/// Assigns `lhs = rhs - lhs` in place, returning the borrow out of the most-significant digit.
-/// The slices must have the same length.
+/// Subtracts `rhs` from `lhs` in place, returning the borrow out of the most-significant digit.
+///
+/// `rhs` must not be longer than `lhs`.
 ///
 /// # Panics
 ///
-/// Panics if `lhs` and `rhs` have different lengths.
+/// Panics if `rhs` is longer than `lhs`.
 ///
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, sub_reverse_unsigned_unsigned_same_len};
-/// // 5 - 3 stored back into the first slice.
-/// let mut a = [Digit::from(3u8)];
-/// let borrow = sub_reverse_unsigned_unsigned_same_len(&mut a, &[Digit::from(5u8)]);
-/// assert_eq!(a, [Digit::from(2u8)]);
+/// # use ibig_core::{Digit, sub_unsigned_unsigned};
+/// let mut a = [Digit::ZERO, Digit::from(3u8)];
+/// let borrow = sub_unsigned_unsigned(&mut a, &[Digit::from(1u8)]);
+/// assert_eq!(a, [Digit::MAX, Digit::from(2u8)]);
 /// assert!(!borrow);
 /// ```
-pub fn sub_reverse_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
-    assert_eq!(lhs.len(), rhs.len());
-    let mut borrow = false;
-    for (l, r) in lhs.iter_mut().zip(rhs) {
-        let (diff, new_borrow) = r.borrowing_sub(*l, borrow);
-        *l = diff;
-        borrow = new_borrow;
-    }
-    borrow
+pub fn sub_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
+    let (low, high) = lhs.split_at_mut(rhs.len());
+    let borrow = sub_unsigned_unsigned_same_len(low, rhs);
+    sub_unsigned_borrow(high, borrow)
 }
 
 /// Subtracts a single digit from the non-empty `lhs` in place, returning the borrow out of the
@@ -255,6 +227,34 @@ pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     sub_unsigned_sdigit(lhs, rhs) + lhs_extension
 }
 
+/// Assigns `lhs = rhs - lhs` in place, returning the borrow out of the most-significant digit.
+/// The slices must have the same length.
+///
+/// # Panics
+///
+/// Panics if `lhs` and `rhs` have different lengths.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, sub_rev_unsigned_unsigned_same_len};
+/// // 5 - 3 stored back into the first slice.
+/// let mut a = [Digit::from(3u8)];
+/// let borrow = sub_rev_unsigned_unsigned_same_len(&mut a, &[Digit::from(5u8)]);
+/// assert_eq!(a, [Digit::from(2u8)]);
+/// assert!(!borrow);
+/// ```
+pub fn sub_rev_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
+    assert_eq!(lhs.len(), rhs.len());
+    let mut borrow = false;
+    for (l, r) in lhs.iter_mut().zip(rhs) {
+        let (diff, new_borrow) = r.borrowing_sub(*l, borrow);
+        *l = diff;
+        borrow = new_borrow;
+    }
+    borrow
+}
+
 /// Subtracts the signed `lhs` from the signed `rhs`, assigning `lhs = rhs - lhs` in place and
 /// returning the signed carry (0 or -1).
 ///
@@ -267,18 +267,18 @@ pub fn sub_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_reverse_signed_signed};
+/// # use ibig_core::{Digit, SignedDigit, sub_rev_signed_signed};
 /// // 5 - 3 == 2
 /// let mut a = [Digit::from(3u8)];
-/// let high = sub_reverse_signed_signed(&mut a, &[Digit::from(5u8)]);
+/// let high = sub_rev_signed_signed(&mut a, &[Digit::from(5u8)]);
 /// assert_eq!(a, [Digit::from(2u8)]);
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
-pub fn sub_reverse_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
+pub fn sub_rev_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension(rhs);
     let (low, high) = lhs.split_at_mut(rhs.len());
-    let low_borrow = sub_reverse_unsigned_unsigned_same_len(low, rhs);
+    let low_borrow = sub_rev_unsigned_unsigned_same_len(low, rhs);
     let low_carry = rhs_extension - SignedDigit::from(low_borrow); // -2..=0
     // negate the top part: -x = !x + 1
     not(high);
@@ -297,14 +297,14 @@ pub fn sub_reverse_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> SignedDigi
 /// # Examples
 ///
 /// ```
-/// # use ibig_core::{Digit, SignedDigit, sub_reverse_signed_sdigit};
+/// # use ibig_core::{Digit, SignedDigit, sub_rev_signed_sdigit};
 /// // 5 - 3 == 2
 /// let mut a = [Digit::from(3u8)];
-/// let high = sub_reverse_signed_sdigit(&mut a, SignedDigit::from(5i8));
+/// let high = sub_rev_signed_sdigit(&mut a, SignedDigit::from(5i8));
 /// assert_eq!(a, [Digit::from(2u8)]);
 /// assert_eq!(high, SignedDigit::ZERO);
 /// ```
-pub fn sub_reverse_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
+pub fn sub_rev_signed_sdigit(lhs: &mut [Digit], rhs: SignedDigit) -> SignedDigit {
     let lhs_extension = sign_extension(lhs);
     let rhs_extension = sign_extension_sdigit(rhs);
     let (low, high) = lhs.split_first_mut().expect("lhs is empty");

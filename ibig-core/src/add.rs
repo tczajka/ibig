@@ -4,29 +4,6 @@ use crate::sub::sub_unsigned_1;
 use crate::{Digit, SignedDigit, sign_extension, sign_extension_sdigit};
 
 /// Adds `rhs` to `lhs` in place, returning the carry out of the most-significant digit.
-///
-/// `rhs` must not be longer than `lhs`.
-///
-/// # Panics
-///
-/// Panics if `rhs` is longer than `lhs`.
-///
-/// # Examples
-///
-/// ```
-/// # use ibig_core::{Digit, add_unsigned_unsigned};
-/// let mut a = [Digit::MAX, Digit::from(2u8)];
-/// let carry = add_unsigned_unsigned(&mut a, &[Digit::from(1u8)]);
-/// assert_eq!(a, [Digit::ZERO, Digit::from(3u8)]);
-/// assert!(!carry);
-/// ```
-pub fn add_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
-    let (low, high) = lhs.split_at_mut(rhs.len());
-    let carry = add_unsigned_unsigned_same_len(low, rhs);
-    add_unsigned_carry(high, carry)
-}
-
-/// Adds `rhs` to `lhs` in place, returning the carry out of the most-significant digit.
 /// The slices must have the same length.
 ///
 /// # Panics
@@ -51,6 +28,29 @@ pub fn add_unsigned_unsigned_same_len(lhs: &mut [Digit], rhs: &[Digit]) -> bool 
         carry = new_carry;
     }
     carry
+}
+
+/// Adds `rhs` to `lhs` in place, returning the carry out of the most-significant digit.
+///
+/// `rhs` must not be longer than `lhs`.
+///
+/// # Panics
+///
+/// Panics if `rhs` is longer than `lhs`.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, add_unsigned_unsigned};
+/// let mut a = [Digit::MAX, Digit::from(2u8)];
+/// let carry = add_unsigned_unsigned(&mut a, &[Digit::from(1u8)]);
+/// assert_eq!(a, [Digit::ZERO, Digit::from(3u8)]);
+/// assert!(!carry);
+/// ```
+pub fn add_unsigned_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> bool {
+    let (low, high) = lhs.split_at_mut(rhs.len());
+    let carry = add_unsigned_unsigned_same_len(low, rhs);
+    add_unsigned_carry(high, carry)
 }
 
 /// Adds a single digit to the non-empty `lhs` in place, returning the carry out of the

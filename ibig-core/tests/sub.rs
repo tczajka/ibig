@@ -2,8 +2,8 @@
 
 use ibig_core::{
     Digit, SignedDigit, add_signed_signed, add_unsigned_signed, add_unsigned_unsigned,
-    extend_signed, neg, sign_extension, sub_reverse_signed_sdigit, sub_reverse_signed_signed,
-    sub_reverse_unsigned_unsigned_same_len, sub_signed_sdigit, sub_signed_signed, sub_unsigned_1,
+    extend_signed, neg, sign_extension, sub_rev_signed_sdigit, sub_rev_signed_signed,
+    sub_rev_unsigned_unsigned_same_len, sub_signed_sdigit, sub_signed_signed, sub_unsigned_1,
     sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_sdigit, sub_unsigned_signed,
     sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,
 };
@@ -71,34 +71,6 @@ fn sub_unsigned_unsigned_same_len_basic() {
 #[should_panic]
 fn sub_unsigned_unsigned_same_len_mismatched() {
     sub_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
-}
-
-#[test]
-fn sub_reverse_unsigned_unsigned_same_len_basic() {
-    // a = b - a == [7, 9] - [4, 6] == [3, 3].
-    let mut a = [digit(4), digit(6)];
-    assert!(!sub_reverse_unsigned_unsigned_same_len(
-        &mut a,
-        &[digit(7), digit(9)]
-    ));
-    assert_eq!(a, [digit(3), digit(3)]);
-
-    // A borrow propagates across digits and out the top: [0, 0] - [1, 0].
-    let mut a = [digit(1), Digit::ZERO];
-    assert!(sub_reverse_unsigned_unsigned_same_len(
-        &mut a,
-        &[Digit::ZERO, Digit::ZERO]
-    ));
-    assert_eq!(a, [Digit::MAX, Digit::MAX]);
-
-    // Empty slices are allowed.
-    assert!(!sub_reverse_unsigned_unsigned_same_len(&mut [], &[]));
-}
-
-#[test]
-#[should_panic]
-fn sub_reverse_unsigned_unsigned_same_len_mismatched() {
-    sub_reverse_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -311,63 +283,91 @@ fn sub_signed_sdigit_empty() {
 }
 
 #[test]
-fn sub_reverse_signed_signed_basic() {
+fn sub_rev_unsigned_unsigned_same_len_basic() {
+    // a = b - a == [7, 9] - [4, 6] == [3, 3].
+    let mut a = [digit(4), digit(6)];
+    assert!(!sub_rev_unsigned_unsigned_same_len(
+        &mut a,
+        &[digit(7), digit(9)]
+    ));
+    assert_eq!(a, [digit(3), digit(3)]);
+
+    // A borrow propagates across digits and out the top: [0, 0] - [1, 0].
+    let mut a = [digit(1), Digit::ZERO];
+    assert!(sub_rev_unsigned_unsigned_same_len(
+        &mut a,
+        &[Digit::ZERO, Digit::ZERO]
+    ));
+    assert_eq!(a, [Digit::MAX, Digit::MAX]);
+
+    // Empty slices are allowed.
+    assert!(!sub_rev_unsigned_unsigned_same_len(&mut [], &[]));
+}
+
+#[test]
+#[should_panic]
+fn sub_rev_unsigned_unsigned_same_len_mismatched() {
+    sub_rev_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
+}
+
+#[test]
+fn sub_rev_signed_signed_basic() {
     // a = b - a == 5 - 3 == 2.
     let mut a = [digit(3)];
-    assert_eq!(sub_reverse_signed_signed(&mut a, &[digit(5)]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(5)]), sdigit(0));
     assert_eq!(a, [digit(2)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(5)];
-    assert_eq!(sub_reverse_signed_signed(&mut a, &[digit(3)]), sdigit(-1));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(3)]), sdigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 
     // -1 - -1 == 0.
     let mut a = [Digit::MAX];
-    assert_eq!(sub_reverse_signed_signed(&mut a, &[Digit::MAX]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[Digit::MAX]), sdigit(0));
     assert_eq!(a, [Digit::ZERO]);
 
     // Overflow into the returned digit: 1 - (-2^(bits-1)) == 2^(bits-1) + 1.
     let signed_min = (Digit::MAX >> 1) + digit(1);
     let mut a = [signed_min];
-    assert_eq!(sub_reverse_signed_signed(&mut a, &[digit(1)]), sdigit(0));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), sdigit(0));
     assert_eq!(a, [signed_min + digit(1)]);
 
     // A borrow ripples through the high zero digits: 1 - 2^(2*bits) == -(2^(2*bits) - 1).
     let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
-    assert_eq!(sub_reverse_signed_signed(&mut a, &[digit(1)]), sdigit(-1));
+    assert_eq!(sub_rev_signed_signed(&mut a, &[digit(1)]), sdigit(-1));
     assert_eq!(a, [digit(1), Digit::ZERO, Digit::MAX]);
 }
 
 #[test]
 #[should_panic]
-fn sub_reverse_signed_signed_rhs_longer() {
-    sub_reverse_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+fn sub_rev_signed_signed_rhs_longer() {
+    sub_rev_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
-fn sub_reverse_signed_signed_rhs_empty() {
-    sub_reverse_signed_signed(&mut [digit(1)], &[]);
+fn sub_rev_signed_signed_rhs_empty() {
+    sub_rev_signed_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
-fn sub_reverse_signed_sdigit_basic() {
+fn sub_rev_signed_sdigit_basic() {
     // a = d - a == 5 - 3 == 2.
     let mut a = [digit(3)];
-    assert_eq!(sub_reverse_signed_sdigit(&mut a, sdigit(5)), sdigit(0));
+    assert_eq!(sub_rev_signed_sdigit(&mut a, sdigit(5)), sdigit(0));
     assert_eq!(a, [digit(2)]);
 
     // 3 - 5 == -2.
     let mut a = [digit(5)];
-    assert_eq!(sub_reverse_signed_sdigit(&mut a, sdigit(3)), sdigit(-1));
+    assert_eq!(sub_rev_signed_sdigit(&mut a, sdigit(3)), sdigit(-1));
     assert_eq!(a, [Digit::MAX - digit(1)]);
 }
 
 #[test]
 #[should_panic]
-fn sub_reverse_signed_sdigit_empty() {
-    sub_reverse_signed_sdigit(&mut [], sdigit(1));
+fn sub_rev_signed_sdigit_empty() {
+    sub_rev_signed_sdigit(&mut [], sdigit(1));
 }
 
 proptest! {
@@ -439,15 +439,15 @@ proptest! {
         prop_assert_eq!(carry_1 + carry_2, SignedDigit::ZERO);
     }
 
-    // `sub_reverse_unsigned_unsigned_same_len(a, b)` (a = b - a) matches the forward
+    // `sub_rev_unsigned_unsigned_same_len(a, b)` (a = b - a) matches the forward
     // `sub_unsigned_unsigned_same_len(b, a)` (b = b - a).
     #[test]
-    fn sub_reverse_matches_forward(
+    fn sub_rev_matches_forward(
         (a, b) in (0usize..20)
             .prop_flat_map(|n| (vec(any::<Digit>(), n), vec(any::<Digit>(), n))),
     ) {
         let mut via_reverse = a.clone();
-        let reverse_borrow = sub_reverse_unsigned_unsigned_same_len(&mut via_reverse, &b);
+        let reverse_borrow = sub_rev_unsigned_unsigned_same_len(&mut via_reverse, &b);
         let mut via_forward = b;
         let forward_borrow = sub_unsigned_unsigned_same_len(&mut via_forward, &a);
         prop_assert_eq!(via_reverse, via_forward);
@@ -521,10 +521,10 @@ proptest! {
         prop_assert_eq!(high_digit, high_slice);
     }
 
-    // `sub_reverse_signed_signed(a, b)` (a = b - a) matches the forward `sub_signed_signed`
+    // `sub_rev_signed_signed(a, b)` (a = b - a) matches the forward `sub_signed_signed`
     // with `b` sign-extended to `a`'s length (so the operands can be swapped).
     #[test]
-    fn sub_reverse_signed_signed_matches_forward(
+    fn sub_rev_signed_signed_matches_forward(
         a in vec(any::<Digit>(), 1..20),
         b in vec(any::<Digit>(), 1..20),
     ) {
@@ -532,7 +532,7 @@ proptest! {
 
         // Reverse: `longer = shorter - longer`.
         let mut via_reverse = longer.clone();
-        let rev_top = sub_reverse_signed_signed(&mut via_reverse, &shorter);
+        let rev_top = sub_rev_signed_signed(&mut via_reverse, &shorter);
         via_reverse.push(rev_top.cast_unsigned());
 
         // Forward with `shorter` sign-extended to `longer`'s length.
@@ -545,16 +545,16 @@ proptest! {
         prop_assert_eq!(via_reverse, shorter_ext);
     }
 
-    // `sub_reverse_signed_sdigit` agrees with `sub_reverse_signed_signed` of a one-digit slice.
+    // `sub_rev_signed_sdigit` agrees with `sub_rev_signed_signed` of a one-digit slice.
     #[test]
-    fn sub_reverse_signed_sdigit_matches_signed_signed(
+    fn sub_rev_signed_sdigit_matches_signed_signed(
         a in vec(any::<Digit>(), 1..20),
         d: SignedDigit,
     ) {
         let mut via_digit = a.clone();
         let mut via_slice = a;
-        let high_digit = sub_reverse_signed_sdigit(&mut via_digit, d);
-        let high_slice = sub_reverse_signed_signed(&mut via_slice, &[d.cast_unsigned()]);
+        let high_digit = sub_rev_signed_sdigit(&mut via_digit, d);
+        let high_slice = sub_rev_signed_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
     }

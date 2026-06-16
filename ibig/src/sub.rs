@@ -125,7 +125,7 @@ impl BinaryOpRefValBigBig for SubUBigUBig {
         }
         rhs.reserve(lhs.len() - rhs_len);
         let (lhs_low, lhs_high) = lhs.split_at(rhs_len);
-        let borrow = ibig_core::sub_reverse_unsigned_unsigned_same_len(&mut rhs, lhs_low);
+        let borrow = ibig_core::sub_rev_unsigned_unsigned_same_len(&mut rhs, lhs_low);
         rhs.extend_from_slice(lhs_high);
         if ibig_core::sub_unsigned_borrow(&mut rhs[rhs_len..], borrow) {
             UBig::panic_negative();
@@ -266,7 +266,7 @@ impl BinaryOpRefBigBig for CheckedSubUBigIBig {
             // upward, so the result fits in `rhs.len()` digits.
             let mut digits = Digits::from_slice(rhs);
             let (low, high) = digits.split_at_mut(lhs.len());
-            let borrow = ibig_core::sub_reverse_unsigned_unsigned_same_len(low, lhs);
+            let borrow = ibig_core::sub_rev_unsigned_unsigned_same_len(low, lhs);
             ibig_core::not(high);
             // -rhs_high = !rhs_high + 1
             // low_carry = 1 - borrow = !borrow
@@ -305,7 +305,7 @@ impl BinaryOpRefValBigBig for SubIBigIBig {
 
     fn apply_digit_val(lhs: SignedDigit, mut rhs: Digits) -> IBig {
         // Reuse `rhs`'s storage: `rhs = lhs - rhs`.
-        let scarry = ibig_core::sub_reverse_signed_sdigit(&mut rhs, lhs);
+        let scarry = ibig_core::sub_rev_signed_sdigit(&mut rhs, lhs);
         IBig::from_digits_scarry(rhs, scarry)
     }
 
@@ -327,13 +327,13 @@ impl BinaryOpRefValBigBig for SubIBigIBig {
         // Reuse `rhs`'s storage: `rhs = lhs - rhs`.
         let rhs_len = rhs.len();
         let scarry = if rhs_len >= lhs.len() {
-            ibig_core::sub_reverse_signed_signed(&mut rhs, lhs)
+            ibig_core::sub_rev_signed_signed(&mut rhs, lhs)
         } else {
             let lhs_extension = sign_extension(lhs);
             let rhs_extension = sign_extension(&rhs);
             rhs.reserve(lhs.len() - rhs_len + 1);
             let (lhs_low, lhs_high) = lhs.split_at(rhs_len);
-            let borrow = ibig_core::sub_reverse_unsigned_unsigned_same_len(&mut rhs, lhs_low);
+            let borrow = ibig_core::sub_rev_unsigned_unsigned_same_len(&mut rhs, lhs_low);
             rhs.extend_from_slice(lhs_high);
             let low_carry = -SignedDigit::from(borrow) - rhs_extension; // -1..=1
             ibig_core::add_unsigned_scarry(&mut rhs[rhs_len..], low_carry) + lhs_extension
