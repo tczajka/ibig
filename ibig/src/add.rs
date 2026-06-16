@@ -78,6 +78,76 @@ impl IBig {
     }
 }
 
+/// Addition operation for [`UBig`].
+enum AddUBigUBig {}
+
+impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
+    fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
+        let (sum, carry) = lhs.overflowing_add(rhs);
+        UBig::from_two_digits(sum, carry.into())
+    }
+
+    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
+        // Clone with room for a possible carry digit.
+        let mut digits = Digits::with_capacity(lhs.len() + 1);
+        digits.extend_from_slice(lhs);
+        Self::apply_val_digit(digits, rhs)
+    }
+
+    fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
+        let carry = ibig_core::add_unsigned_digit(&mut lhs, rhs);
+        UBig::from_digits_carry(lhs, carry)
+    }
+
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
+        // Clone the longer operand, with room for a possible carry digit, and add
+        // the shorter one to it.
+        let (longer, shorter) = if lhs.len() >= rhs.len() {
+            (lhs, rhs)
+        } else {
+            (rhs, lhs)
+        };
+        let mut digits = Digits::with_capacity(longer.len() + 1);
+        digits.extend_from_slice(longer);
+        Self::apply_val_ref(digits, shorter)
+    }
+
+    fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
+        let carry = if lhs.len() >= rhs.len() {
+            ibig_core::add_unsigned_unsigned(&mut lhs, rhs)
+        } else {
+            // Add the overlapping low digits, then append the high digits of `rhs` and
+            // propagate the carry through them. Reserve for the appended digits and a
+            // possible carry digit.
+            let lhs_len = lhs.len();
+            lhs.reserve(rhs.len() - lhs_len + 1);
+            let (rhs_low, rhs_high) = rhs.split_at(lhs_len);
+            let low_carry = ibig_core::add_unsigned_unsigned_same_len(&mut lhs, rhs_low);
+            lhs.extend_from_slice(rhs_high);
+            ibig_core::add_unsigned_carry(&mut lhs[lhs_len..], low_carry)
+        };
+        UBig::from_digits_carry(lhs, carry)
+    }
+
+    fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
+        // Reuse storage from the longer operand.
+        if lhs.len() >= rhs.len() {
+            Self::apply_val_ref(lhs, &rhs)
+        } else {
+            Self::apply_val_ref(rhs, &lhs)
+        }
+    }
+}
+
+impl_binary_operator!(
+    Add::add(UBig, UBig) -> UBig,
+    AddAssign::add_assign,
+    BigBig<AddUBigUBig>
+);
+
 /// The [`UBig::checked_add_signed`] operation.
 enum CheckedAddUBigIBig {}
 
@@ -189,76 +259,6 @@ impl BinaryOpRefBigBig for AddIBigUBig {
         IBig::from_digits_scarry(digits, scarry)
     }
 }
-
-/// Addition operation for [`UBig`].
-enum AddUBigUBig {}
-
-impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
-    type Operand = UBig;
-    type Output = UBig;
-
-    fn apply_digit_digit(lhs: Digit, rhs: Digit) -> UBig {
-        let (sum, carry) = lhs.overflowing_add(rhs);
-        UBig::from_two_digits(sum, carry.into())
-    }
-
-    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> UBig {
-        // Clone with room for a possible carry digit.
-        let mut digits = Digits::with_capacity(lhs.len() + 1);
-        digits.extend_from_slice(lhs);
-        Self::apply_val_digit(digits, rhs)
-    }
-
-    fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
-        let carry = ibig_core::add_unsigned_digit(&mut lhs, rhs);
-        UBig::from_digits_carry(lhs, carry)
-    }
-
-    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
-        // Clone the longer operand, with room for a possible carry digit, and add
-        // the shorter one to it.
-        let (longer, shorter) = if lhs.len() >= rhs.len() {
-            (lhs, rhs)
-        } else {
-            (rhs, lhs)
-        };
-        let mut digits = Digits::with_capacity(longer.len() + 1);
-        digits.extend_from_slice(longer);
-        Self::apply_val_ref(digits, shorter)
-    }
-
-    fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
-        let carry = if lhs.len() >= rhs.len() {
-            ibig_core::add_unsigned_unsigned(&mut lhs, rhs)
-        } else {
-            // Add the overlapping low digits, then append the high digits of `rhs` and
-            // propagate the carry through them. Reserve for the appended digits and a
-            // possible carry digit.
-            let lhs_len = lhs.len();
-            lhs.reserve(rhs.len() - lhs_len + 1);
-            let (rhs_low, rhs_high) = rhs.split_at(lhs_len);
-            let low_carry = ibig_core::add_unsigned_unsigned_same_len(&mut lhs, rhs_low);
-            lhs.extend_from_slice(rhs_high);
-            ibig_core::add_unsigned_carry(&mut lhs[lhs_len..], low_carry)
-        };
-        UBig::from_digits_carry(lhs, carry)
-    }
-
-    fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
-        // Reuse storage from the longer operand.
-        if lhs.len() >= rhs.len() {
-            Self::apply_val_ref(lhs, &rhs)
-        } else {
-            Self::apply_val_ref(rhs, &lhs)
-        }
-    }
-}
-
-impl_binary_operator!(
-    Add::add(UBig, UBig) -> UBig,
-    AddAssign::add_assign,
-    BigBig<AddUBigUBig>
-);
 
 /// Addition operation for [`IBig`].
 enum AddIBigIBig {}

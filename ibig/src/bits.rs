@@ -1,6 +1,6 @@
 //! Bit operations on [`UBig`] and [`IBig`].
 
-use crate::ops::{UnaryOpRef, UnaryOpRefBig};
+use crate::ops::{BinaryOpRefBigCopy, BinaryOpRefCopy, UnaryOpRef, UnaryOpRefBig};
 use crate::repr::{
     AsDigits,
     AsDigitsResult::{Large, Small},
@@ -24,12 +24,7 @@ impl UBig {
     /// assert!(!UBig::from(0b10010u8).bit(100));
     /// ```
     pub fn bit(&self, index: usize) -> bool {
-        match self.as_digits() {
-            Small(digit) => {
-                index < DIGIT_BITS_USIZE && (digit >> index) & Digit::from_u8(1) != Digit::ZERO
-            }
-            Large(digits) => ibig_core::bit_unsigned(digits, BitIndex::from(index)),
-        }
+        <BitUBig as BinaryOpRefCopy>::apply_ref(self, index)
     }
 
     /// Sets the bit at `position`, counting from the least-significant bit, to `value`.
@@ -217,10 +212,7 @@ impl IBig {
     /// assert!(!IBig::from(2i8).bit(100));
     /// ```
     pub fn bit(&self, index: usize) -> bool {
-        match self.as_digits() {
-            Small(digit) => IBig::bit_digit(digit, index),
-            Large(digits) => ibig_core::bit_signed(digits, BitIndex::from(index)),
-        }
+        <BitIBig as BinaryOpRefCopy>::apply_ref(self, index)
     }
 
     /// Sets the bit at `position` of the two's complement representation to `value`.
@@ -315,16 +307,6 @@ impl IBig {
         <TrailingOnesIBig as UnaryOpRef>::apply_ref(self)
     }
 
-    /// [`IBig::bit`] for a single digit.
-    fn bit_digit(digit: SignedDigit, index: usize) -> bool {
-        if index < DIGIT_BITS_USIZE {
-            (digit >> index) & SignedDigit::from_i8(1) != SignedDigit::ZERO
-        } else {
-            // Positions above the digit read the sign bit.
-            digit.is_negative()
-        }
-    }
-
     /// [`IBig::set_bit`] for a single digit.
     fn set_bit_digit(digit: SignedDigit, index: usize, value: bool) -> IBig {
         if index < DIGIT_BITS_USIZE - 1 {
@@ -374,6 +356,23 @@ impl IBig {
             // This will not overflow because our numbers are never longer than `usize::MAX` bits.
             Some(highest.try_into().unwrap())
         }
+    }
+}
+
+/// The [`UBig::bit`] operation.
+enum BitUBig {}
+
+impl BinaryOpRefBigCopy for BitUBig {
+    type Left = UBig;
+    type Right = usize;
+    type Output = bool;
+
+    fn apply_digit(lhs: Digit, rhs: usize) -> bool {
+        rhs < DIGIT_BITS_USIZE && (lhs >> rhs) & Digit::from_u8(1) != Digit::ZERO
+    }
+
+    fn apply_ref(lhs: &[Digit], rhs: usize) -> bool {
+        ibig_core::bit_unsigned(lhs, BitIndex::from(rhs))
     }
 }
 
@@ -494,6 +493,28 @@ impl UnaryOpRefBig for NextPowerOfTwoUBig {
             new_digits.push(Digit::from_u8(1));
         }
         UBig::from_digits(new_digits)
+    }
+}
+
+/// The [`IBig::bit`] operation.
+enum BitIBig {}
+
+impl BinaryOpRefBigCopy for BitIBig {
+    type Left = IBig;
+    type Right = usize;
+    type Output = bool;
+
+    fn apply_digit(lhs: SignedDigit, rhs: usize) -> bool {
+        if rhs < DIGIT_BITS_USIZE {
+            (lhs >> rhs) & SignedDigit::from_i8(1) != SignedDigit::ZERO
+        } else {
+            // Positions above the digit read the sign bit.
+            lhs.is_negative()
+        }
+    }
+
+    fn apply_ref(lhs: &[Digit], rhs: usize) -> bool {
+        ibig_core::bit_signed(lhs, BitIndex::from(rhs))
     }
 }
 
