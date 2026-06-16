@@ -103,7 +103,8 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
         };
         let mut digits = Digits::with_capacity(longer.len() + 1);
         digits.extend_from_slice(longer);
-        Self::apply_val_ref(digits, shorter)
+        let carry = ibig_core::add_unsigned_unsigned(&mut digits, shorter);
+        UBig::from_digits_carry(digits, carry)
     }
 
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
@@ -125,11 +126,13 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
 
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from the longer operand.
-        if lhs.len() >= rhs.len() {
-            Self::apply_val_ref(lhs, &rhs)
+        let (mut longer, shorter) = if lhs.len() >= rhs.len() {
+            (lhs, rhs)
         } else {
-            Self::apply_val_ref(rhs, &lhs)
-        }
+            (rhs, lhs)
+        };
+        let carry = ibig_core::add_unsigned_unsigned(&mut longer, &shorter);
+        UBig::from_digits_carry(longer, carry)
     }
 }
 
