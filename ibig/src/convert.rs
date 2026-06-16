@@ -241,19 +241,44 @@ try_from_ubig_signed!(i64 => u64);
 try_from_ubig_signed!(i128 => u128);
 try_from_ubig_signed!(isize => usize);
 
-/// Converts to `bool`: zero is `false`, one is `true`, anything else is out of range.
+/// The [`UBig`]-to-`bool` conversion: zero is `false`, one is `true`, anything else is out
+/// of range.
+enum UBigToBool {}
+
+impl UnaryOpRefValBig for UBigToBool {
+    type Operand = UBig;
+    type Output = Result<bool, TryFromBigError>;
+
+    fn apply_digit(operand: Digit) -> Result<bool, TryFromBigError> {
+        operand.try_into().map_err(|_| TryFromBigError)
+    }
+
+    fn apply_ref(_operand: &[Digit]) -> Result<bool, TryFromBigError> {
+        // A multi-digit value exceeds one, out of range for `bool`.
+        Err(TryFromBigError)
+    }
+
+    fn apply_val(_operand: Digits) -> Result<bool, TryFromBigError> {
+        // A multi-digit value exceeds one, out of range for `bool`.
+        Err(TryFromBigError)
+    }
+}
+
+impl TryFrom<UBig> for bool {
+    type Error = TryFromBigError;
+
+    fn try_from(value: UBig) -> Result<bool, TryFromBigError> {
+        <UBigToBool as UnaryOpRefVal>::apply_val(value)
+    }
+}
+
 impl TryFrom<&UBig> for bool {
     type Error = TryFromBigError;
 
     fn try_from(value: &UBig) -> Result<bool, TryFromBigError> {
-        match value.as_digits() {
-            Small(digit) => digit.try_into().map_err(|_| TryFromBigError),
-            Large(_) => Err(TryFromBigError),
-        }
+        <UBigToBool as UnaryOpRefVal>::apply_ref(value)
     }
 }
-
-try_from_big_value!(bool, UBig);
 
 /// Implements `From<$t> for IBig` for a signed primitive: a value that fits in a single
 /// digit takes the fast path, otherwise it goes through the little-endian bytes.
@@ -428,19 +453,44 @@ unsigned_from_ibig!(u64);
 unsigned_from_ibig!(u128);
 unsigned_from_ibig!(usize);
 
-/// Converts to `bool`: zero is `false`, one is `true`, anything else is out of range.
+/// The [`IBig`]-to-`bool` conversion: zero is `false`, one is `true`, anything else is out
+/// of range.
+enum IBigToBool {}
+
+impl UnaryOpRefValBig for IBigToBool {
+    type Operand = IBig;
+    type Output = Result<bool, TryFromBigError>;
+
+    fn apply_digit(operand: SignedDigit) -> Result<bool, TryFromBigError> {
+        operand.try_into().map_err(|_| TryFromBigError)
+    }
+
+    fn apply_ref(_operand: &[Digit]) -> Result<bool, TryFromBigError> {
+        // A multi-digit value is not 0 or 1, out of range for `bool`.
+        Err(TryFromBigError)
+    }
+
+    fn apply_val(_operand: Digits) -> Result<bool, TryFromBigError> {
+        // A multi-digit value is not 0 or 1, out of range for `bool`.
+        Err(TryFromBigError)
+    }
+}
+
+impl TryFrom<IBig> for bool {
+    type Error = TryFromBigError;
+
+    fn try_from(value: IBig) -> Result<bool, TryFromBigError> {
+        <IBigToBool as UnaryOpRefVal>::apply_val(value)
+    }
+}
+
 impl TryFrom<&IBig> for bool {
     type Error = TryFromBigError;
 
     fn try_from(value: &IBig) -> Result<bool, TryFromBigError> {
-        match value.as_digits() {
-            Small(digit) => digit.try_into().map_err(|_| TryFromBigError),
-            Large(_) => Err(TryFromBigError),
-        }
+        <IBigToBool as UnaryOpRefVal>::apply_ref(value)
     }
 }
-
-try_from_big_value!(bool, IBig);
 
 /// The fallible [`IBig`]-to-[`UBig`] conversion.
 enum IBigToUBig {}
