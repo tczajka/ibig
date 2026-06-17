@@ -122,6 +122,14 @@ fn ibig_add_basic() {
         (IBig::from(1) << 192) + IBig::from(-1),
         IBig::from(UBig::from_le_bytes(&[0xff; 24]))
     );
+
+    // Multi-digit *negative* `lhs` shorter than `rhs`, via `owned + &ref`
+    // (`apply_val_ref`) and `owned + owned` (`apply_val_val`) — paths other forms bypass.
+    let small = -((IBig::from(1) << 100) + IBig::from(1));
+    let big = IBig::from(1) << 300;
+    let expected = (IBig::from(1) << 300) - (IBig::from(1) << 100) - IBig::from(1);
+    assert_eq!(small.clone() + &big, expected.clone());
+    assert_eq!(small + big, expected);
 }
 
 #[test]

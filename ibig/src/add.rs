@@ -127,11 +127,11 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
         // Reuse storage from the longer operand.
         let (mut longer, shorter) = if lhs.len() >= rhs.len() {
-            (lhs, rhs)
+            (lhs, &rhs)
         } else {
-            (rhs, lhs)
+            (rhs, &lhs)
         };
-        let carry = ibig_core::add_unsigned_unsigned(&mut longer, &shorter);
+        let carry = ibig_core::add_unsigned_unsigned(&mut longer, shorter);
         UBig::from_digits_carry(longer, carry)
     }
 }
@@ -285,24 +285,29 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
 
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> IBig {
         let lhs_len = lhs.len();
-        if lhs_len < rhs.len() {
-            // Sign-extend `lhs` to the length of `rhs`. Reserve for the extension digits
-            // and a possible sign digit.
+        let icarry = if lhs_len >= rhs.len() {
+            ibig_core::add_signed_signed(&mut lhs, rhs)
+        } else {
+            let lhs_extension = sign_extension(&lhs);
             lhs.reserve(rhs.len() - lhs_len + 1);
-            let fill = sign_extension(&lhs).cast_unsigned();
-            lhs.resize(rhs.len(), fill);
-        }
-        let icarry = ibig_core::add_signed_signed(&mut lhs, rhs);
+            let (rhs_low, rhs_high) = rhs.split_at(lhs_len);
+            let low_carry = ibig_core::add_unsigned_unsigned_same_len(&mut lhs, rhs_low);
+            let low_icarry = IDigit::from(low_carry) + lhs_extension; // -1..=1
+            lhs.extend_from_slice(rhs_high);
+            ibig_core::add_signed_icarry(&mut lhs[lhs_len..], low_icarry)
+        };
         IBig::from_digits_icarry(lhs, icarry)
     }
 
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {
         // Reuse storage from the longer operand.
-        if lhs.len() >= rhs.len() {
-            Self::apply_val_ref(lhs, &rhs)
+        let (mut longer, shorter) = if lhs.len() >= rhs.len() {
+            (lhs, &rhs)
         } else {
-            Self::apply_val_ref(rhs, &lhs)
-        }
+            (rhs, &lhs)
+        };
+        let icarry = ibig_core::add_signed_signed(&mut longer, shorter);
+        IBig::from_digits_icarry(longer, icarry)
     }
 }
 
