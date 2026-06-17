@@ -1,10 +1,11 @@
 //! Integration tests for subtraction.
 
 use ibig_core::{
-    Digit, IDigit, add_signed_signed, add_unsigned_signed, add_unsigned_unsigned, extend_signed,
-    neg, sign_extension, sub_digit_idigit, sub_idigit_idigit, sub_rev_signed_idigit,
-    sub_rev_signed_signed, sub_rev_unsigned_unsigned_same_len, sub_signed_idigit,
-    sub_signed_signed, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
+    Digit, IDigit, add_signed_signed, add_signed_unsigned, add_unsigned_signed,
+    add_unsigned_unsigned, extend_signed, neg, sign_extension, sub_digit_idigit, sub_idigit_idigit,
+    sub_rev_signed_idigit, sub_rev_signed_signed, sub_rev_unsigned_idigit, sub_rev_unsigned_signed,
+    sub_rev_unsigned_unsigned_same_len, sub_signed_digit, sub_signed_idigit, sub_signed_signed,
+    sub_signed_unsigned, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
     sub_unsigned_idigit, sub_unsigned_signed, sub_unsigned_unsigned,
     sub_unsigned_unsigned_same_len,
 };
@@ -275,6 +276,48 @@ fn sub_idigit_idigit_basic() {
 }
 
 #[test]
+fn sub_signed_unsigned_basic() {
+    // A non-negative `lhs`: 8 - 3 == 5.
+    let mut a = [digit(8), digit(2)];
+    assert_eq!(sub_signed_unsigned(&mut a, &[digit(3)]), idigit(0));
+    assert_eq!(a, [digit(5), digit(2)]);
+
+    // A negative `lhs`: -1 - 5 == -6.
+    let mut a = [Digit::MAX];
+    assert_eq!(sub_signed_unsigned(&mut a, &[digit(5)]), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(5)]);
+
+    // A non-negative `lhs` going negative: 2 - 3 == -1.
+    let mut a = [digit(2)];
+    assert_eq!(sub_signed_unsigned(&mut a, &[digit(3)]), idigit(-1));
+    assert_eq!(a, [Digit::MAX]);
+
+    // The most-negative `lhs` minus the largest digit needs a -2 carry:
+    // -2^(bits-1) - (2^bits - 1).
+    let signed_min = (Digit::MAX >> 1) + digit(1);
+    let mut a = [signed_min];
+    assert_eq!(sub_signed_unsigned(&mut a, &[Digit::MAX]), idigit(-2));
+    assert_eq!(a, [signed_min + digit(1)]);
+
+    // A borrow ripples through the high zero digits of a positive `lhs`: 2^(2*bits) - 1.
+    let mut a = [Digit::ZERO, Digit::ZERO, digit(1)];
+    assert_eq!(sub_signed_unsigned(&mut a, &[digit(1)]), idigit(0));
+    assert_eq!(a, [Digit::MAX, Digit::MAX, Digit::ZERO]);
+}
+
+#[test]
+#[should_panic]
+fn sub_signed_unsigned_rhs_longer() {
+    sub_signed_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
+}
+
+#[test]
+#[should_panic]
+fn sub_signed_unsigned_lhs_empty() {
+    sub_signed_unsigned(&mut [], &[]);
+}
+
+#[test]
 fn sub_signed_signed_basic() {
     // Two non-negative values.
     let mut a = [digit(7), digit(3)];
@@ -321,6 +364,31 @@ fn sub_signed_signed_rhs_longer() {
 #[should_panic]
 fn sub_signed_signed_rhs_empty() {
     sub_signed_signed(&mut [digit(1)], &[]);
+}
+
+#[test]
+fn sub_signed_digit_basic() {
+    // -1 - 5 == -6.
+    let mut a = [Digit::MAX];
+    assert_eq!(sub_signed_digit(&mut a, digit(5)), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(5)]);
+
+    // A non-negative `lhs`: 8 - 3 == 5.
+    let mut a = [digit(8), digit(2)];
+    assert_eq!(sub_signed_digit(&mut a, digit(3)), idigit(0));
+    assert_eq!(a, [digit(5), digit(2)]);
+
+    // The most-negative single digit minus the largest digit needs a -2 carry.
+    let signed_min = (Digit::MAX >> 1) + digit(1);
+    let mut a = [signed_min];
+    assert_eq!(sub_signed_digit(&mut a, Digit::MAX), idigit(-2));
+    assert_eq!(a, [signed_min + digit(1)]);
+}
+
+#[test]
+#[should_panic]
+fn sub_signed_digit_empty() {
+    sub_signed_digit(&mut [], digit(1));
 }
 
 #[test]
@@ -378,6 +446,65 @@ fn sub_rev_unsigned_unsigned_same_len_basic() {
 #[should_panic]
 fn sub_rev_unsigned_unsigned_same_len_mismatched() {
     sub_rev_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
+}
+
+#[test]
+fn sub_rev_unsigned_signed_basic() {
+    // a = b - a == 3 - 5 == -2 (a unsigned, b signed).
+    let mut a = [digit(5)];
+    assert_eq!(sub_rev_unsigned_signed(&mut a, &[digit(3)]), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(1)]);
+
+    // A negative `b`: -1 - 5 == -6.
+    let mut a = [digit(5)];
+    assert_eq!(sub_rev_unsigned_signed(&mut a, &[Digit::MAX]), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(5)]);
+
+    // A non-negative result: 8 - 3 == 5.
+    let mut a = [digit(3)];
+    assert_eq!(sub_rev_unsigned_signed(&mut a, &[digit(8)]), idigit(0));
+    assert_eq!(a, [digit(5)]);
+
+    // A multi-digit `a` subtracted from a single-digit `b`: 3 - (5 + 2*base).
+    let mut a = [digit(5), digit(2)];
+    assert_eq!(sub_rev_unsigned_signed(&mut a, &[digit(3)]), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(1), Digit::MAX - digit(2)]);
+}
+
+#[test]
+#[should_panic]
+fn sub_rev_unsigned_signed_rhs_longer() {
+    sub_rev_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+}
+
+#[test]
+#[should_panic]
+fn sub_rev_unsigned_signed_rhs_empty() {
+    sub_rev_unsigned_signed(&mut [digit(1)], &[]);
+}
+
+#[test]
+fn sub_rev_unsigned_idigit_basic() {
+    // a = b - a == 3 - 5 == -2 (a unsigned, b signed digit).
+    let mut a = [digit(5)];
+    assert_eq!(sub_rev_unsigned_idigit(&mut a, idigit(3)), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(1)]);
+
+    // A negative `b`: -1 - 5 == -6.
+    let mut a = [digit(5)];
+    assert_eq!(sub_rev_unsigned_idigit(&mut a, idigit(-1)), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(5)]);
+
+    // A multi-digit `a`: 3 - (5 + 2*base).
+    let mut a = [digit(5), digit(2)];
+    assert_eq!(sub_rev_unsigned_idigit(&mut a, idigit(3)), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(1), Digit::MAX - digit(2)]);
+}
+
+#[test]
+#[should_panic]
+fn sub_rev_unsigned_idigit_empty() {
+    sub_rev_unsigned_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -580,6 +707,34 @@ proptest! {
         prop_assert_eq!(high_digit, high_slice);
     }
 
+    // Subtracting the unsigned `b` from the signed `a`, then adding `b` back, recovers `a`.
+    #[test]
+    fn add_sub_signed_unsigned_roundtrip(
+        a in vec(any::<Digit>(), 1..20),
+        b in vec(any::<Digit>(), 1..20),
+    ) {
+        prop_assume!(b.len() <= a.len());
+        let mut x = a.clone();
+        let top = sub_signed_unsigned(&mut x, &b);
+        x.push(top.cast_unsigned()); // [x] == a - b, signed, a.len() + 1 digits
+        let _ = add_signed_unsigned(&mut x, &b); // x += b == a (sign-extended)
+
+        let mut expected = a.clone();
+        expected.push(sign_extension(&a).cast_unsigned());
+        prop_assert_eq!(x, expected);
+    }
+
+    // `sub_signed_digit` agrees with `sub_signed_unsigned` of a one-digit slice.
+    #[test]
+    fn sub_signed_digit_matches_signed_unsigned(a in vec(any::<Digit>(), 1..20), d: Digit) {
+        let mut via_digit = a.clone();
+        let mut via_slice = a;
+        let high_digit = sub_signed_digit(&mut via_digit, d);
+        let high_slice = sub_signed_unsigned(&mut via_slice, &[d]);
+        prop_assert_eq!(via_digit, via_slice);
+        prop_assert_eq!(high_digit, high_slice);
+    }
+
     // `sub_unsigned_idigit` agrees with `sub_unsigned_signed` of a one-digit slice.
     #[test]
     fn sub_unsigned_idigit_matches_unsigned_signed(a in vec(any::<Digit>(), 1..20), d: IDigit) {
@@ -645,6 +800,39 @@ proptest! {
         let mut via_slice = a;
         let high_digit = sub_rev_signed_idigit(&mut via_digit, d);
         let high_slice = sub_rev_signed_signed(&mut via_slice, &[d.cast_unsigned()]);
+        prop_assert_eq!(via_digit, via_slice);
+        prop_assert_eq!(high_digit, high_slice);
+    }
+
+    // `sub_rev_unsigned_signed(a, b)` computes `b - a` (a unsigned, b signed); adding the
+    // original `a` back recovers `b`.
+    #[test]
+    fn sub_rev_unsigned_signed_roundtrip(
+        a in vec(any::<Digit>(), 1..20),
+        b in vec(any::<Digit>(), 1..20),
+    ) {
+        prop_assume!(b.len() <= a.len());
+        let mut x = a.clone();
+        let top = sub_rev_unsigned_signed(&mut x, &b);
+        x.push(top.cast_unsigned()); // [x] == b - a, signed, a.len() + 1 digits
+        let _ = add_signed_unsigned(&mut x, &a); // x += a == b (sign-extended)
+
+        let mut expected = b.clone();
+        expected.resize(a.len() + 1, Digit::ZERO);
+        extend_signed(&mut expected, b.len());
+        prop_assert_eq!(x, expected);
+    }
+
+    // `sub_rev_unsigned_idigit` agrees with `sub_rev_unsigned_signed` of a one-digit slice.
+    #[test]
+    fn sub_rev_unsigned_idigit_matches_unsigned_signed(
+        a in vec(any::<Digit>(), 1..20),
+        d: IDigit,
+    ) {
+        let mut via_digit = a.clone();
+        let mut via_slice = a;
+        let high_digit = sub_rev_unsigned_idigit(&mut via_digit, d);
+        let high_slice = sub_rev_unsigned_signed(&mut via_slice, &[d.cast_unsigned()]);
         prop_assert_eq!(via_digit, via_slice);
         prop_assert_eq!(high_digit, high_slice);
     }
