@@ -115,7 +115,7 @@ impl UnaryOpRefValBig for NegIBig {
 
     fn apply_val(mut operand: Digits) -> IBig {
         let icarry = ibig_core::neg(&mut operand);
-        IBig::from_digits_icarry(operand, icarry)
+        IBig::from_digits_idigit(operand, icarry)
     }
 }
 

@@ -90,7 +90,7 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
 
     fn apply_val_digit(mut lhs: Digits, rhs: Digit) -> UBig {
         let carry = ibig_core::add_unsigned_digit(&mut lhs, rhs);
-        UBig::from_digits_carry(lhs, carry)
+        UBig::from_digits_digit(lhs, carry.into())
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> UBig {
@@ -104,7 +104,7 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
         let mut digits = Digits::with_capacity(longer.len() + 1);
         digits.extend_from_slice(longer);
         let carry = ibig_core::add_unsigned_unsigned(&mut digits, shorter);
-        UBig::from_digits_carry(digits, carry)
+        UBig::from_digits_digit(digits, carry.into())
     }
 
     fn apply_val_ref(mut lhs: Digits, rhs: &[Digit]) -> UBig {
@@ -121,7 +121,7 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
             lhs.extend_from_slice(rhs_high);
             ibig_core::add_unsigned_carry(&mut lhs[lhs_len..], low_carry)
         };
-        UBig::from_digits_carry(lhs, carry)
+        UBig::from_digits_digit(lhs, carry.into())
     }
 
     fn apply_val_val(lhs: Digits, rhs: Digits) -> UBig {
@@ -132,7 +132,7 @@ impl CommutativeBinaryOpRefValBigBig for AddUBigUBig {
             (rhs, &lhs)
         };
         let carry = ibig_core::add_unsigned_unsigned(&mut longer, shorter);
-        UBig::from_digits_carry(longer, carry)
+        UBig::from_digits_digit(longer, carry.into())
     }
 }
 
@@ -152,7 +152,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
 
     fn apply_digit_digit(lhs: Digit, rhs: IDigit) -> Option<UBig> {
         let (low, icarry) = ibig_core::add_digit_idigit(lhs, rhs);
-        UBig::try_from_digit_icarry(low, icarry)
+        UBig::try_from_digit_idigit(low, icarry)
     }
 
     fn apply_digit_ref(lhs: Digit, rhs: &[Digit]) -> Option<UBig> {
@@ -165,7 +165,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
         // `rhs.len()` is sufficient capacity for the sum.
         let mut digits = Digits::from_slice(rhs);
         let icarry = ibig_core::add_signed_digit(&mut digits, lhs);
-        UBig::try_from_digits_icarry(digits, icarry)
+        UBig::try_from_digits_idigit(digits, icarry)
     }
 
     fn apply_ref_digit(lhs: &[Digit], rhs: IDigit) -> Option<UBig> {
@@ -173,7 +173,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
         let icarry = ibig_core::add_unsigned_idigit(&mut digits, rhs);
-        UBig::try_from_digits_icarry(digits, icarry)
+        UBig::try_from_digits_idigit(digits, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Option<UBig> {
@@ -195,7 +195,7 @@ impl BinaryOpRefBigBig for CheckedAddUBigIBig {
             digits = Digits::from_slice(rhs);
             icarry = ibig_core::add_signed_unsigned(&mut digits, lhs);
         }
-        UBig::try_from_digits_icarry(digits, icarry)
+        UBig::try_from_digits_idigit(digits, icarry)
     }
 }
 
@@ -217,7 +217,7 @@ impl BinaryOpRefBigBig for AddIBigUBig {
         let mut digits = Digits::with_capacity(rhs.len() + 1);
         digits.extend_from_slice(rhs);
         let icarry = ibig_core::add_unsigned_idigit(&mut digits, lhs);
-        IBig::from_digits_icarry(digits, icarry)
+        IBig::from_digits_idigit(digits, icarry)
     }
 
     fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> IBig {
@@ -225,7 +225,7 @@ impl BinaryOpRefBigBig for AddIBigUBig {
         let mut digits = Digits::with_capacity(lhs.len() + 1);
         digits.extend_from_slice(lhs);
         let icarry = ibig_core::add_signed_digit(&mut digits, rhs);
-        IBig::from_digits_icarry(digits, icarry)
+        IBig::from_digits_idigit(digits, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
@@ -242,7 +242,7 @@ impl BinaryOpRefBigBig for AddIBigUBig {
             digits.extend_from_slice(rhs);
             icarry = ibig_core::add_unsigned_signed(&mut digits, lhs);
         }
-        IBig::from_digits_icarry(digits, icarry)
+        IBig::from_digits_idigit(digits, icarry)
     }
 }
 
@@ -267,7 +267,7 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
 
     fn apply_val_digit(mut lhs: Digits, rhs: IDigit) -> IBig {
         let icarry = ibig_core::add_signed_idigit(&mut lhs, rhs);
-        IBig::from_digits_icarry(lhs, icarry)
+        IBig::from_digits_idigit(lhs, icarry)
     }
 
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
@@ -296,7 +296,7 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
             lhs.extend_from_slice(rhs_high);
             ibig_core::add_signed_icarry(&mut lhs[lhs_len..], low_icarry)
         };
-        IBig::from_digits_icarry(lhs, icarry)
+        IBig::from_digits_idigit(lhs, icarry)
     }
 
     fn apply_val_val(lhs: Digits, rhs: Digits) -> IBig {
@@ -307,7 +307,7 @@ impl CommutativeBinaryOpRefValBigBig for AddIBigIBig {
             (rhs, &lhs)
         };
         let icarry = ibig_core::add_signed_signed(&mut longer, shorter);
-        IBig::from_digits_icarry(longer, icarry)
+        IBig::from_digits_idigit(longer, icarry)
     }
 }
 

@@ -106,39 +106,36 @@ impl UBig {
         UBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
     }
 
-    /// Construct from little-endian digits plus the carry out of an addition, appended as a
-    /// most-significant `1` digit when set.
+    /// Construct from little-endian digits and another digit.
     ///
     /// # Panics
     ///
     /// Panics if the resulting value has more than [`MAX_DIGITS`] digits.
-    pub(crate) fn from_digits_carry(mut digits: Digits, carry: bool) -> UBig {
-        if carry {
-            // The appended `1` is a nonzero most-significant digit, so `digits` is already at
+    pub(crate) fn from_digits_digit(mut digits: Digits, digit: Digit) -> UBig {
+        if digit != Digit::ZERO {
+            digits.push(digit);
+            // `digit` is a nonzero most-significant digit, so `digits` is already at
             // its canonical length and non-empty; only the buffer capacity may need shrinking.
-            digits.push(Digit::from(1u8));
             UBig::shrink(digits)
         } else {
             UBig::from_digits(digits)
         }
     }
 
-    /// Constructs a [`UBig`] from the single digit `low` topped by a signed carry `icarry`,
-    /// returning `None` when `icarry` is negative (the value would be negative).
-    pub(crate) fn try_from_digit_icarry(low: Digit, icarry: IDigit) -> Option<UBig> {
-        // A non-negative `icarry` is the 0-or-1 high digit; a negative one is not a valid `bool`,
-        // so the conversion fails and `?` returns `None`.
-        let high = bool::try_from(icarry).ok()?;
-        Some(UBig::from_two_digits(low, Digit::from(high)))
+    /// Constructs a [`UBig`] from the single digit `low` topped by a signed `idigit`,
+    /// returning `None` when `idigit` is negative (the value would be negative).
+    pub(crate) fn try_from_digit_idigit(low: Digit, idigit: IDigit) -> Option<UBig> {
+        let high = Digit::try_from(idigit).ok()?;
+        Some(UBig::from_two_digits(low, high))
     }
 
-    /// Constructs a [`UBig`] from `digits` topped by a signed carry `icarry`, returning `None`
-    /// when `icarry` is negative (the value would be negative).
-    pub(crate) fn try_from_digits_icarry(digits: Digits, icarry: IDigit) -> Option<UBig> {
-        // A non-negative `icarry` is the 0-or-1 carry above `digits`; a negative one is not a
-        // valid `bool`, so the conversion fails and `?` returns `None`.
-        let carry = bool::try_from(icarry).ok()?;
-        Some(UBig::from_digits_carry(digits, carry))
+    /// Constructs a [`UBig`] from `digits` topped by a signed `idigit`, returning `None`
+    /// when `idigit` is negative (the value would be negative).
+    pub(crate) fn try_from_digits_idigit(digits: Digits, idigit: IDigit) -> Option<UBig> {
+        // A non-negative `idigit` is the high digit above `digits`; a negative one has no `Digit`
+        // value, so the conversion fails and `?` returns `None`.
+        let digit = Digit::try_from(idigit).ok()?;
+        Some(UBig::from_digits_digit(digits, digit))
     }
 
     /// Wraps `digits` — already trimmed to its canonical length and non-empty — as a `UBig`,
@@ -235,19 +232,17 @@ impl IBig {
         IBig(unsafe { Digits::from_const_with_len_unchecked(buffer, len) })
     }
 
-    /// Construct from little-endian two's complement digits plus the sign digit `icarry`
-    /// returned by a signed addition or subtraction, appended unless it is a redundant
-    /// sign-extension of the digit below it.
+    /// Construct from little-endian two's complement digits plus an extra digit `idigit`.
     ///
     /// # Panics
     ///
     /// Panics if `digits` is empty, or if, after normalization, the value has more than
     /// [`MAX_DIGITS`] digits.
-    pub(crate) fn from_digits_icarry(mut digits: Digits, icarry: IDigit) -> IBig {
-        if icarry != sign_extension(&digits) {
+    pub(crate) fn from_digits_idigit(mut digits: Digits, idigit: IDigit) -> IBig {
+        if idigit != sign_extension(&digits) {
             // `icarry` is a non-redundant most-significant digit, so `digits` is already at its
             // canonical length; only the buffer capacity may need shrinking.
-            digits.push(icarry.cast_unsigned());
+            digits.push(idigit.cast_unsigned());
             IBig::shrink(digits)
         } else {
             IBig::from_digits(digits)
