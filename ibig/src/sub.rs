@@ -80,6 +80,21 @@ impl UBig {
     }
 }
 
+impl IBig {
+    /// Subtracts the unsigned `rhs` from `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ibig::{IBig, UBig};
+    /// assert_eq!(IBig::from(5).sub_unsigned(&UBig::from(3u8)), IBig::from(2));
+    /// assert_eq!(IBig::from(-5).sub_unsigned(&UBig::from(3u8)), IBig::from(-8));
+    /// ```
+    pub fn sub_unsigned(&self, rhs: &UBig) -> IBig {
+        <SubIBigUBig as BinaryOpRef>::apply_ref_ref(self, rhs)
+    }
+}
+
 /// Subtraction operation for [`UBig`].
 enum SubUBigUBig {}
 
@@ -251,6 +266,53 @@ impl BinaryOpRefBigBig for CheckedSubUBigIBig {
             let icarry = ibig_core::neg_borrow(high, borrow);
             UBig::try_from_digits_idigit(digits, icarry)
         }
+    }
+}
+
+/// The [`IBig::sub_unsigned`] operation.
+enum SubIBigUBig {}
+
+impl BinaryOpRefBigBig for SubIBigUBig {
+    type Left = IBig;
+    type Right = UBig;
+    type Output = IBig;
+
+    fn apply_digit_digit(lhs: IDigit, rhs: Digit) -> IBig {
+        let (low, icarry) = ibig_core::sub_idigit_digit(lhs, rhs);
+        IBig::from_two_digits(low, icarry)
+    }
+
+    fn apply_digit_ref(lhs: IDigit, rhs: &[Digit]) -> IBig {
+        // Clone the unsigned `rhs` (the longer operand); `rhs = lhs - rhs`.
+        let mut digits = Digits::with_capacity(rhs.len() + 1);
+        digits.extend_from_slice(rhs);
+        let icarry = ibig_core::sub_rev_unsigned_idigit(&mut digits, lhs);
+        IBig::from_digits_idigit(digits, icarry)
+    }
+
+    fn apply_ref_digit(lhs: &[Digit], rhs: Digit) -> IBig {
+        // Clone the signed `lhs` (the longer operand) and subtract the unsigned digit `rhs`.
+        let mut digits = Digits::with_capacity(lhs.len() + 1);
+        digits.extend_from_slice(lhs);
+        let icarry = ibig_core::sub_signed_digit(&mut digits, rhs);
+        IBig::from_digits_idigit(digits, icarry)
+    }
+
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> IBig {
+        let mut digits;
+        let icarry;
+        if lhs.len() >= rhs.len() {
+            // Clone the signed `lhs` (the longer operand) and subtract the unsigned `rhs`.
+            digits = Digits::with_capacity(lhs.len() + 1);
+            digits.extend_from_slice(lhs);
+            icarry = ibig_core::sub_signed_unsigned(&mut digits, rhs);
+        } else {
+            // Clone the unsigned `rhs` (the longer operand); `rhs = lhs - rhs`.
+            digits = Digits::with_capacity(rhs.len() + 1);
+            digits.extend_from_slice(rhs);
+            icarry = ibig_core::sub_rev_unsigned_signed(&mut digits, lhs);
+        }
+        IBig::from_digits_idigit(digits, icarry)
     }
 }
 

@@ -97,6 +97,12 @@ proptest! {
             prop_assert_eq!(a.strict_sub_signed(&b), expected);
         }
     }
+
+    // `IBig::sub_unsigned(a, b)` (a signed, b unsigned) equals `IBig` subtraction `a - b`.
+    #[test]
+    fn ibig_sub_unsigned_vs_ibig(a in ibig_up_to_bits(300), b in ubig_up_to_bits(300)) {
+        prop_assert_eq!(a.sub_unsigned(&b), &a - IBig::from(&b));
+    }
 }
 
 #[test]
@@ -152,6 +158,42 @@ fn ibig_sub_basic() {
     assert_eq!(
         a - &b,
         -((IBig::from(1) << 300) + (IBig::from(1) << 100) + IBig::from(1))
+    );
+}
+
+#[test]
+fn ibig_sub_unsigned_basic() {
+    // Single-digit cases.
+    assert_eq!(IBig::from(5).sub_unsigned(&UBig::from(3u8)), IBig::from(2));
+    assert_eq!(IBig::from(3).sub_unsigned(&UBig::from(5u8)), IBig::from(-2));
+    assert_eq!(
+        IBig::from(-5).sub_unsigned(&UBig::from(3u8)),
+        IBig::from(-8)
+    );
+    assert_eq!(IBig::from(-5).sub_unsigned(&UBig::ZERO), IBig::from(-5));
+
+    // A single-digit signed value minus a large unsigned value (`rhs` longer).
+    let big = UBig::from(1u8) << 256;
+    assert_eq!(
+        IBig::from(-1).sub_unsigned(&big),
+        IBig::from(-1) - IBig::from(&big)
+    );
+
+    // A large signed value minus a single unsigned digit (`lhs` longer).
+    assert_eq!(
+        (IBig::from(-1) << 256).sub_unsigned(&UBig::from(1u8)),
+        (IBig::from(-1) << 256) - IBig::from(1)
+    );
+
+    // Large - large, with the signed operand longer.
+    assert_eq!(
+        (IBig::from(-1) << 256).sub_unsigned(&(UBig::from(1u8) << 100)),
+        (IBig::from(-1) << 256) - (IBig::from(1) << 100)
+    );
+    // Large - large, with the unsigned operand longer.
+    assert_eq!(
+        (IBig::from(-1) << 100).sub_unsigned(&(UBig::from(1u8) << 256)),
+        (IBig::from(-1) << 100) - (IBig::from(1) << 256)
     );
 }
 

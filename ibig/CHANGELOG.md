@@ -22,6 +22,7 @@ API changes.
 - `UBig::strict_sub_signed`.
 - `UBig::saturating_sub_signed`.
 - `IBig::add_unsigned`.
+- `IBig::sub_unsigned`.
 - `UBig::bit_and_not`.
 
 ## [0.3.6] - 2022-09-18

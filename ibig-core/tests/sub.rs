@@ -2,11 +2,11 @@
 
 use ibig_core::{
     Digit, IDigit, add_signed_signed, add_signed_unsigned, add_unsigned_signed,
-    add_unsigned_unsigned, extend_signed, neg, sign_extension, sub_digit_idigit, sub_idigit_idigit,
-    sub_rev_signed_idigit, sub_rev_signed_signed, sub_rev_unsigned_idigit, sub_rev_unsigned_signed,
-    sub_rev_unsigned_unsigned_same_len, sub_signed_digit, sub_signed_idigit, sub_signed_signed,
-    sub_signed_unsigned, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
-    sub_unsigned_idigit, sub_unsigned_signed, sub_unsigned_unsigned,
+    add_unsigned_unsigned, extend_signed, neg, sign_extension, sub_digit_idigit, sub_idigit_digit,
+    sub_idigit_idigit, sub_rev_signed_idigit, sub_rev_signed_signed, sub_rev_unsigned_idigit,
+    sub_rev_unsigned_signed, sub_rev_unsigned_unsigned_same_len, sub_signed_digit,
+    sub_signed_idigit, sub_signed_signed, sub_signed_unsigned, sub_unsigned_1, sub_unsigned_borrow,
+    sub_unsigned_digit, sub_unsigned_idigit, sub_unsigned_signed, sub_unsigned_unsigned,
     sub_unsigned_unsigned_same_len,
 };
 use proptest::collection::vec;
@@ -233,6 +233,30 @@ fn sub_digit_idigit_basic() {
     assert_eq!(
         sub_digit_idigit(Digit::MAX, IDigit::MIN),
         (IDigit::MAX.cast_unsigned(), idigit(1))
+    );
+}
+
+#[test]
+fn sub_idigit_digit_basic() {
+    // 5 - 3 == 2, no carry.
+    assert_eq!(sub_idigit_digit(idigit(5), digit(3)), (digit(2), idigit(0)));
+
+    // 3 - 5 == -2.
+    assert_eq!(
+        sub_idigit_digit(idigit(3), digit(5)),
+        (Digit::MAX - digit(1), idigit(-1))
+    );
+
+    // -5 - 3 == -8.
+    assert_eq!(
+        sub_idigit_digit(idigit(-5), digit(3)),
+        (Digit::MAX - digit(7), idigit(-1))
+    );
+
+    // The most-negative digit minus the largest digit needs a -2 carry.
+    assert_eq!(
+        sub_idigit_digit(IDigit::MIN, Digit::MAX),
+        (IDigit::MAX.cast_unsigned() + digit(2), idigit(-2))
     );
 }
 
@@ -752,6 +776,16 @@ proptest! {
         let (low, carry) = sub_digit_idigit(a, d);
         let mut slice = [a];
         let slice_carry = sub_unsigned_idigit(&mut slice, d);
+        prop_assert_eq!(low, slice[0]);
+        prop_assert_eq!(carry, slice_carry);
+    }
+
+    // `sub_idigit_digit(a, d)` agrees with `sub_signed_digit` on the one-digit slice `[a]`.
+    #[test]
+    fn sub_idigit_digit_matches_signed_digit(a: IDigit, d: Digit) {
+        let (low, carry) = sub_idigit_digit(a, d);
+        let mut slice = [a.cast_unsigned()];
+        let slice_carry = sub_signed_digit(&mut slice, d);
         prop_assert_eq!(low, slice[0]);
         prop_assert_eq!(carry, slice_carry);
     }

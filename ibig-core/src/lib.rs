@@ -54,11 +54,12 @@ pub use sign::{
     sign_extension_byte, sign_extension_idigit,
 };
 pub use sub::{
-    sub_digit_idigit, sub_idigit_idigit, sub_rev_signed_idigit, sub_rev_signed_signed,
-    sub_rev_unsigned_idigit, sub_rev_unsigned_signed, sub_rev_unsigned_unsigned_same_len,
-    sub_signed_digit, sub_signed_idigit, sub_signed_signed, sub_signed_unsigned, sub_unsigned_1,
-    sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_idigit, sub_unsigned_signed,
-    sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,
+    sub_digit_idigit, sub_idigit_digit, sub_idigit_idigit, sub_rev_signed_idigit,
+    sub_rev_signed_signed, sub_rev_unsigned_idigit, sub_rev_unsigned_signed,
+    sub_rev_unsigned_unsigned_same_len, sub_signed_digit, sub_signed_idigit, sub_signed_signed,
+    sub_signed_unsigned, sub_unsigned_1, sub_unsigned_borrow, sub_unsigned_digit,
+    sub_unsigned_idigit, sub_unsigned_signed, sub_unsigned_unsigned,
+    sub_unsigned_unsigned_same_len,
 };
 use unative::{INative, UNative};
 
