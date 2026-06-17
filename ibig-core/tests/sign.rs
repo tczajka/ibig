@@ -1,8 +1,8 @@
 //! Integration tests for sign operations.
 
 use ibig_core::{
-    Digit, IDigit, extend_signed, extend_signed_bytes, is_negative, neg, sign_extension,
-    sign_extension_byte, sign_extension_idigit,
+    Digit, IDigit, extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow,
+    sign_extension, sign_extension_byte, sign_extension_idigit,
 };
 
 fn digit(n: u8) -> Digit {
@@ -70,6 +70,52 @@ fn neg_basic() {
 #[should_panic]
 fn neg_empty() {
     neg(&mut []);
+}
+
+#[test]
+fn neg_borrow_basic() {
+    // Without a borrow it behaves like `neg`: 3 negates to -3.
+    let mut a = [digit(3)];
+    assert_eq!(neg_borrow(&mut a, false), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(2)]);
+
+    // With a borrow: -3 - 1 == -4.
+    let mut a = [digit(3)];
+    assert_eq!(neg_borrow(&mut a, true), idigit(-1));
+    assert_eq!(a, [Digit::MAX - digit(3)]);
+
+    // -(-1) - 0 == 1.
+    let mut a = [Digit::MAX];
+    assert_eq!(neg_borrow(&mut a, false), idigit(0));
+    assert_eq!(a, [digit(1)]);
+
+    // -(-1) - 1 == 0.
+    let mut a = [Digit::MAX];
+    assert_eq!(neg_borrow(&mut a, true), idigit(0));
+    assert_eq!(a, [Digit::ZERO]);
+
+    // -0 - 1 == -1.
+    let mut a = [Digit::ZERO];
+    assert_eq!(neg_borrow(&mut a, true), idigit(-1));
+    assert_eq!(a, [Digit::MAX]);
+
+    // The most-negative single digit: -(-2^(bits-1)) - 1 == 2^(bits-1) - 1 fits in one digit.
+    let signed_max = Digit::MAX >> 1;
+    let signed_min = signed_max + digit(1);
+    let mut a = [signed_min];
+    assert_eq!(neg_borrow(&mut a, true), idigit(0));
+    assert_eq!(a, [signed_max]);
+
+    // Multi-digit with a borrow: -(-1) - 1 == 0.
+    let mut a = [Digit::MAX, Digit::MAX];
+    assert_eq!(neg_borrow(&mut a, true), idigit(0));
+    assert_eq!(a, [Digit::ZERO, Digit::ZERO]);
+}
+
+#[test]
+#[should_panic]
+fn neg_borrow_empty() {
+    neg_borrow(&mut [], true);
 }
 
 #[test]

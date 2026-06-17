@@ -258,6 +258,37 @@ pub fn sub_signed_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     sub_unsigned_idigit(lhs, rhs) + lhs_extension
 }
 
+/// Subtracts the signed digit `rhs` from the signed digit `lhs`, returning the low digit and the
+/// signed carry (0 or -1) above it.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, sub_idigit_idigit};
+/// // 5 - 3 == 2, no carry.
+/// assert_eq!(
+///     sub_idigit_idigit(IDigit::from(5i8), IDigit::from(3i8)),
+///     (Digit::from(2u8), IDigit::ZERO)
+/// );
+///
+/// // 3 - 5 == -2: the low digit wraps and the carry is -1.
+/// assert_eq!(
+///     sub_idigit_idigit(IDigit::from(3i8), IDigit::from(5i8)),
+///     (Digit::MAX - Digit::from(1u8), IDigit::from(-1i8))
+/// );
+///
+/// // The most-negative minus the most-positive: MIN - MAX == -2^bits + 1.
+/// assert_eq!(
+///     sub_idigit_idigit(IDigit::MIN, IDigit::MAX),
+///     (Digit::from(1u8), IDigit::from(-1i8))
+/// );
+/// ```
+pub fn sub_idigit_idigit(lhs: IDigit, rhs: IDigit) -> (Digit, IDigit) {
+    let (low, borrow) = lhs.cast_unsigned().overflowing_sub(rhs.cast_unsigned());
+    let icarry = sign_extension_idigit(lhs) - sign_extension_idigit(rhs) - IDigit::from(borrow);
+    (low, icarry)
+}
+
 /// Assigns `lhs = rhs - lhs` in place, returning the borrow out of the most-significant digit.
 /// The slices must have the same length.
 ///

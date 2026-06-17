@@ -144,6 +144,15 @@ fn ibig_sub_basic() {
     // A single digit minus a long value (`lhs` shorter than `rhs`); verify via addition.
     let r = IBig::from(7) - (IBig::from(1) << 192);
     assert_eq!(r + (IBig::from(1) << 192), IBig::from(7));
+
+    // `owned - &ref` with a multi-digit *negative* `lhs` shorter than `rhs`
+    // (exercises `SubIBigIBig::apply_val_ref`, which other forms bypass).
+    let a = -((IBig::from(1) << 100) + IBig::from(1));
+    let b = IBig::from(1) << 300;
+    assert_eq!(
+        a - &b,
+        -((IBig::from(1) << 300) + (IBig::from(1) << 100) + IBig::from(1))
+    );
 }
 
 #[test]

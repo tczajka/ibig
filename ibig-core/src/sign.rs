@@ -51,6 +51,42 @@ pub fn neg(digits: &mut [Digit]) -> IDigit {
     !extension
 }
 
+/// Negates the signed value in the non-empty `digits` and subtracts `borrow` (0 or 1) in place,
+/// returning the signed carry (0 or -1).
+///
+/// # Panics
+///
+/// Panics if `digits` is empty.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, neg_borrow};
+/// // -(-1) - 0 == 1.
+/// let mut a = [Digit::MAX];
+/// assert_eq!(neg_borrow(&mut a, false), IDigit::ZERO);
+/// assert_eq!(a, [Digit::from(1u8)]);
+///
+/// // -(-1) - 1 == 0.
+/// let mut a = [Digit::MAX];
+/// assert_eq!(neg_borrow(&mut a, true), IDigit::ZERO);
+/// assert_eq!(a, [Digit::ZERO]);
+///
+/// // -3 - 1 == -4, a borrow out of the most-significant digit.
+/// let mut a = [Digit::from(3u8)];
+/// assert_eq!(neg_borrow(&mut a, true), IDigit::from(-1i8));
+/// assert_eq!(a, [Digit::MAX - Digit::from(3u8)]);
+/// ```
+pub fn neg_borrow(digits: &mut [Digit], borrow: bool) -> IDigit {
+    if borrow {
+        // -x - 1 == !x, which always fits in the same number of digits.
+        not(digits);
+        sign_extension(digits)
+    } else {
+        neg(digits)
+    }
+}
+
 /// Sign-extends the signed value held in `digits[..len]` to fill the rest of
 /// `digits` in place: every digit from index `len` onward is set to the value's sign
 /// (all-ones if negative, zero otherwise).

@@ -30,8 +30,8 @@ mod sign;
 mod sub;
 
 pub use add::{
-    add_digit_idigit, add_idigit_idigit, add_signed_digit, add_signed_idigit, add_signed_signed,
-    add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
+    add_digit_idigit, add_idigit_idigit, add_signed_digit, add_signed_icarry, add_signed_idigit,
+    add_signed_signed, add_signed_unsigned, add_unsigned_1, add_unsigned_carry, add_unsigned_digit,
     add_unsigned_icarry, add_unsigned_idigit, add_unsigned_signed, add_unsigned_unsigned,
     add_unsigned_unsigned_same_len,
 };
@@ -50,11 +50,11 @@ pub use shift::{
     shr_small_unsigned,
 };
 pub use sign::{
-    extend_signed, extend_signed_bytes, is_negative, neg, sign_extension, sign_extension_byte,
-    sign_extension_idigit,
+    extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow, sign_extension,
+    sign_extension_byte, sign_extension_idigit,
 };
 pub use sub::{
-    sub_digit_idigit, sub_rev_signed_idigit, sub_rev_signed_signed,
+    sub_digit_idigit, sub_idigit_idigit, sub_rev_signed_idigit, sub_rev_signed_signed,
     sub_rev_unsigned_unsigned_same_len, sub_signed_idigit, sub_signed_signed, sub_unsigned_1,
     sub_unsigned_borrow, sub_unsigned_digit, sub_unsigned_idigit, sub_unsigned_signed,
     sub_unsigned_unsigned, sub_unsigned_unsigned_same_len,

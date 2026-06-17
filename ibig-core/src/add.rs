@@ -245,29 +245,6 @@ pub fn add_digit_idigit(lhs: Digit, rhs: IDigit) -> (Digit, IDigit) {
     (low, icarry)
 }
 
-/// Adds the signed `rhs` to the signed `lhs` in place, returning the signed carry (0 or -1).
-///
-/// `rhs` must be non-empty and not longer than `lhs`.
-///
-/// # Panics
-///
-/// Panics if `rhs` is empty or longer than `lhs`.
-///
-/// # Examples
-///
-/// ```
-/// # use ibig_core::{Digit, IDigit, add_signed_signed};
-/// // -1 + -1 == -2
-/// let mut a = [Digit::MAX];
-/// let high = add_signed_signed(&mut a, &[Digit::MAX]);
-/// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
-/// assert_eq!(high, IDigit::from(-1i8));
-/// ```
-pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
-    let lhs_extension = sign_extension(lhs);
-    add_unsigned_signed(lhs, rhs) + lhs_extension
-}
-
 /// Adds the unsigned `rhs` to the signed `lhs` in place, returning the signed carry (-1, 0, or
 /// 1).
 ///
@@ -294,6 +271,29 @@ pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
 pub fn add_signed_unsigned(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
     let lhs_extension = sign_extension(lhs);
     IDigit::from(add_unsigned_unsigned(lhs, rhs)) + lhs_extension
+}
+
+/// Adds the signed `rhs` to the signed `lhs` in place, returning the signed carry (0 or -1).
+///
+/// `rhs` must be non-empty and not longer than `lhs`.
+///
+/// # Panics
+///
+/// Panics if `rhs` is empty or longer than `lhs`.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, add_signed_signed};
+/// // -1 + -1 == -2
+/// let mut a = [Digit::MAX];
+/// let high = add_signed_signed(&mut a, &[Digit::MAX]);
+/// assert_eq!(a, [Digit::MAX - Digit::from(1u8)]);
+/// assert_eq!(high, IDigit::from(-1i8));
+/// ```
+pub fn add_signed_signed(lhs: &mut [Digit], rhs: &[Digit]) -> IDigit {
+    let lhs_extension = sign_extension(lhs);
+    add_unsigned_signed(lhs, rhs) + lhs_extension
 }
 
 /// Adds the unsigned digit `rhs` to the non-empty signed `lhs` in place, returning the signed
@@ -337,6 +337,32 @@ pub fn add_signed_digit(lhs: &mut [Digit], rhs: Digit) -> IDigit {
 pub fn add_signed_idigit(lhs: &mut [Digit], rhs: IDigit) -> IDigit {
     let lhs_extension = sign_extension(lhs);
     add_unsigned_idigit(lhs, rhs) + lhs_extension
+}
+
+/// Adds a signed carry (-1, 0, or 1) to the non-empty signed `lhs` in place, returning the
+/// signed carry (0 or -1).
+///
+/// # Panics
+///
+/// Panics if `lhs` is empty, or if `carry` is not -1, 0, or 1.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, IDigit, add_signed_icarry};
+/// // -1 + 1 == 0.
+/// let mut a = [Digit::MAX];
+/// assert_eq!(add_signed_icarry(&mut a, IDigit::from(1i8)), IDigit::ZERO);
+/// assert_eq!(a, [Digit::ZERO]);
+///
+/// // 0 + -1 == -1, borrowing out the top.
+/// let mut a = [Digit::ZERO, Digit::ZERO];
+/// assert_eq!(add_signed_icarry(&mut a, IDigit::from(-1i8)), IDigit::from(-1i8));
+/// assert_eq!(a, [Digit::MAX, Digit::MAX]);
+/// ```
+pub fn add_signed_icarry(lhs: &mut [Digit], carry: IDigit) -> IDigit {
+    let lhs_extension = sign_extension(lhs);
+    add_unsigned_icarry(lhs, carry) + lhs_extension
 }
 
 /// Adds the signed digit `rhs` to the signed digit `lhs`, returning the low digit and the
