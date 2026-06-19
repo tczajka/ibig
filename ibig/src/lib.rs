@@ -17,6 +17,7 @@ mod bytes;
 mod cmp;
 mod convert;
 mod error;
+mod hash;
 mod misc;
 mod ops;
 mod repr;

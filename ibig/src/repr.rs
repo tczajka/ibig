@@ -1,6 +1,9 @@
 //! Contains the definitions of [`UBig`] and [`IBig`] and maintains their invariants.
 
+use crate::ops::{UnaryOpRef, UnaryOpRefBig};
+use crate::repr::AsDigitsResult::{Large, Small};
 use core::hint::assert_unchecked;
+use core::mem;
 use ibig_core::{
     DIGIT_BITS_USIZE, Digit, IDigit, min_len_signed, min_len_unsigned, sign_extension,
     sign_extension_idigit,
@@ -33,8 +36,7 @@ pub(crate) type Digits = SmallVec<[Digit; INLINE_DIGITS]>;
 ///
 /// Operations whose result would be negative (e.g. subtracting a larger number from a smaller
 /// one) panic.
-#[allow(clippy::derived_hash_with_manual_eq)]
-#[derive(Debug, Hash)]
+#[derive(Debug)]
 pub struct UBig(
     /// The little-endian digits in canonical form:
     /// * the buffer is never empty
@@ -169,8 +171,7 @@ impl UBig {
 /// Signed big integer.
 ///
 /// An arbitrarily large signed integer.
-#[allow(clippy::derived_hash_with_manual_eq)]
-#[derive(Debug, Hash)]
+#[derive(Debug)]
 pub struct IBig(
     /// The little-endian digits of the two's complement representation in canonical form:
     /// * the buffer is never empty
@@ -273,25 +274,71 @@ impl IBig {
 
 impl Clone for UBig {
     fn clone(&self) -> UBig {
-        UBig(self.0.clone())
+        <CloneUBig as UnaryOpRef>::apply_ref(self)
     }
 
     fn clone_from(&mut self, source: &UBig) {
-        let mut digits = core::mem::take(self).0;
-        digits.clone_from(&source.0);
-        *self = UBig::shrink(digits);
+        *self = match source.as_digits() {
+            Small(digit) => UBig::from_digit(digit),
+            Large(digits) => {
+                // Reuse `self`'s allocation for the copy (taking the whole `UBig`, so a panic
+                // leaves a valid `ZERO`), then restore the canonical capacity with `shrink`.
+                let mut buffer = mem::take(self).0;
+                buffer.clear();
+                buffer.extend_from_slice(digits);
+                UBig::shrink(buffer)
+            }
+        }
+    }
+}
+
+/// Clones a [`UBig`].
+enum CloneUBig {}
+
+impl UnaryOpRefBig for CloneUBig {
+    type Operand = UBig;
+    type Output = UBig;
+
+    fn apply_digit(digit: Digit) -> UBig {
+        UBig::from_digit(digit)
+    }
+
+    fn apply_ref(digits: &[Digit]) -> UBig {
+        UBig(Digits::from_slice(digits))
     }
 }
 
 impl Clone for IBig {
     fn clone(&self) -> IBig {
-        IBig(self.0.clone())
+        <CloneIBig as UnaryOpRef>::apply_ref(self)
     }
 
     fn clone_from(&mut self, source: &IBig) {
-        let mut digits = core::mem::take(self).0;
-        digits.clone_from(&source.0);
-        *self = IBig::shrink(digits);
+        *self = match source.as_digits() {
+            Small(digit) => IBig::from_digit(digit),
+            Large(digits) => {
+                let mut buffer = mem::take(self).0;
+                buffer.clear();
+                buffer.extend_from_slice(digits);
+                IBig::shrink(buffer)
+            }
+        }
+    }
+}
+
+/// Clones an [`IBig`].
+enum CloneIBig {}
+
+impl UnaryOpRefBig for CloneIBig {
+    type Operand = IBig;
+    type Output = IBig;
+
+    fn apply_digit(digit: IDigit) -> IBig {
+        IBig::from_digit(digit)
+    }
+
+    fn apply_ref(digits: &[Digit]) -> IBig {
+        IBig(Digits::from_slice(digits))
     }
 }
 
