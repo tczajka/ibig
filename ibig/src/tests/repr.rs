@@ -347,3 +347,31 @@ fn ibig_as_digits() {
         Large([Digit::MAX, digit(0)].as_slice())
     );
 }
+
+#[test]
+fn ubig_clone_from() {
+    // Cloning a single digit into a large (spilled) buffer must shrink it back to canonical
+    // form: the single digit ends up stored inline (`Small`), not in the leftover heap buffer.
+    let big = UBig::from(1u8) << 1000;
+    let mut a = big.clone();
+    a.clone_from(&UBig::from(5u8));
+    assert_eq!(a.into_digits(), Small(digit(5)));
+
+    // Cloning a large value into a small one reproduces it exactly (the buffer grows).
+    let mut b = UBig::from(7u8);
+    b.clone_from(&big);
+    assert_eq!(b, big);
+}
+
+#[test]
+fn ibig_clone_from() {
+    // Same canonical-capacity check for `IBig`.
+    let big = IBig::from(1) << 1000;
+    let mut a = big.clone();
+    a.clone_from(&IBig::from(-5));
+    assert_eq!(a.into_digits(), Small(idigit(-5)));
+
+    let mut b = IBig::from(7);
+    b.clone_from(&big);
+    assert_eq!(b, big);
+}

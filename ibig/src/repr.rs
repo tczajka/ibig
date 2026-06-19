@@ -34,7 +34,7 @@ pub(crate) type Digits = SmallVec<[Digit; INLINE_DIGITS]>;
 /// Operations whose result would be negative (e.g. subtracting a larger number from a smaller
 /// one) panic.
 #[allow(clippy::derived_hash_with_manual_eq)]
-#[derive(Clone, Debug, Hash)]
+#[derive(Debug, Hash)]
 pub struct UBig(
     /// The little-endian digits in canonical form:
     /// * the buffer is never empty
@@ -170,7 +170,7 @@ impl UBig {
 ///
 /// An arbitrarily large signed integer.
 #[allow(clippy::derived_hash_with_manual_eq)]
-#[derive(Clone, Debug, Hash)]
+#[derive(Debug, Hash)]
 pub struct IBig(
     /// The little-endian digits of the two's complement representation in canonical form:
     /// * the buffer is never empty
@@ -268,6 +268,30 @@ impl IBig {
             }
         }
         IBig(digits)
+    }
+}
+
+impl Clone for UBig {
+    fn clone(&self) -> UBig {
+        UBig(self.0.clone())
+    }
+
+    fn clone_from(&mut self, source: &UBig) {
+        let mut digits = core::mem::take(self).0;
+        digits.clone_from(&source.0);
+        *self = UBig::shrink(digits);
+    }
+}
+
+impl Clone for IBig {
+    fn clone(&self) -> IBig {
+        IBig(self.0.clone())
+    }
+
+    fn clone_from(&mut self, source: &IBig) {
+        let mut digits = core::mem::take(self).0;
+        digits.clone_from(&source.0);
+        *self = IBig::shrink(digits);
     }
 }
 
