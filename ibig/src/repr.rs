@@ -294,22 +294,33 @@ impl AsDigits for UBig {
     type SingleDigit = Digit;
 
     fn as_digits(&self) -> AsDigitsResult<Digit, &[Digit]> {
-        if !self.0.spilled() && self.0.len() == 1 {
-            AsDigitsResult::Small(self.0[0])
+        let digits = self.0.as_slice();
+        // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
+        // for `smallvec` than testing `digits.len() == 1`.
+        if !self.0.spilled() && digits.len() == 1 {
+            AsDigitsResult::Small(digits[0])
         } else {
-            let res = self.0.as_slice();
-            // SAFETY: We never have 0 digits and 1 digit is always inline.
-            unsafe { assert_unchecked(res.len() > 1) };
-            AsDigitsResult::Large(res)
+            // SAFETY: `UBig` invariants.
+            unsafe {
+                assert_unchecked(digits.len() > 1);
+                assert_unchecked(*digits.last().unwrap() != Digit::ZERO);
+            };
+            AsDigitsResult::Large(digits)
         }
     }
 
     fn into_digits(self) -> AsDigitsResult<Digit, Digits> {
-        if !self.0.spilled() && self.0.len() == 1 {
-            AsDigitsResult::Small(self.0[0])
+        let digits = self.0.as_slice();
+        // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
+        // for `smallvec` than testing `digits.len() == 1`.
+        if !self.0.spilled() && digits.len() == 1 {
+            AsDigitsResult::Small(digits[0])
         } else {
-            // SAFETY: We never have 0 digits and 1 digit is always inline.
-            unsafe { assert_unchecked(self.0.len() > 1) };
+            // SAFETY: `UBig` invariants.
+            unsafe {
+                assert_unchecked(digits.len() > 1);
+                assert_unchecked(*digits.last().unwrap() != Digit::ZERO);
+            };
             AsDigitsResult::Large(self.0)
         }
     }
@@ -319,22 +330,39 @@ impl AsDigits for IBig {
     type SingleDigit = IDigit;
 
     fn as_digits(&self) -> AsDigitsResult<IDigit, &[Digit]> {
-        if !self.0.spilled() && self.0.len() == 1 {
-            AsDigitsResult::Small(self.0[0].cast_signed())
+        let digits = self.0.as_slice();
+        // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
+        // for `smallvec` than testing `digits.len() == 1`.
+        if !self.0.spilled() && digits.len() == 1 {
+            AsDigitsResult::Small(digits[0].cast_signed())
         } else {
-            let res = self.0.as_slice();
-            // SAFETY: We never have 0 digits and 1 digit is always inline.
-            unsafe { assert_unchecked(res.len() > 1) };
-            AsDigitsResult::Large(res)
+            // SAFETY: `IBig` invariants.
+            unsafe {
+                assert_unchecked(digits.len() > 1);
+                assert_unchecked(
+                    digits.last().unwrap().cast_signed()
+                        != sign_extension_idigit(digits[digits.len() - 2].cast_signed()),
+                );
+            };
+            AsDigitsResult::Large(digits)
         }
     }
 
     fn into_digits(self) -> AsDigitsResult<IDigit, Digits> {
-        if !self.0.spilled() && self.0.len() == 1 {
-            AsDigitsResult::Small(self.0[0].cast_signed())
+        let digits = self.0.as_slice();
+        // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
+        // for `smallvec` than testing `digits.len() == 1`.
+        if !self.0.spilled() && digits.len() == 1 {
+            AsDigitsResult::Small(digits[0].cast_signed())
         } else {
-            // SAFETY: We never have 0 digits and 1 digit is always inline.
-            unsafe { assert_unchecked(self.0.len() > 1) };
+            // SAFETY: `IBig` invariants.
+            unsafe {
+                assert_unchecked(digits.len() > 1);
+                assert_unchecked(
+                    digits.last().unwrap().cast_signed()
+                        != sign_extension_idigit(digits[digits.len() - 2].cast_signed()),
+                );
+            };
             AsDigitsResult::Large(self.0)
         }
     }
