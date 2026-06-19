@@ -33,7 +33,8 @@ pub(crate) type Digits = SmallVec<[Digit; INLINE_DIGITS]>;
 ///
 /// Operations whose result would be negative (e.g. subtracting a larger number from a smaller
 /// one) panic.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Clone, Debug, Hash)]
 pub struct UBig(
     /// The little-endian digits in canonical form:
     /// * the buffer is never empty
@@ -168,7 +169,8 @@ impl UBig {
 /// Signed big integer.
 ///
 /// An arbitrarily large signed integer.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Clone, Debug, Hash)]
 pub struct IBig(
     /// The little-endian digits of the two's complement representation in canonical form:
     /// * the buffer is never empty

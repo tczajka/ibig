@@ -14,6 +14,7 @@ mod add;
 mod bits;
 mod bitwise;
 mod bytes;
+mod cmp;
 mod convert;
 mod error;
 mod misc;
