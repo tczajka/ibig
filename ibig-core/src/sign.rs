@@ -87,6 +87,33 @@ pub fn neg_borrow(digits: &mut [Digit], borrow: bool) -> IDigit {
     }
 }
 
+/// Replaces the non-empty signed `digits` with their absolute value in place. The result is the
+/// unsigned magnitude, which always fits in the same number of digits (the magnitude of the most
+/// negative value, `2^(bits-1)`, sets the top bit but stays within `bits` unsigned bits).
+///
+/// # Panics
+///
+/// Panics if `digits` is empty.
+///
+/// # Examples
+///
+/// ```
+/// # use ibig_core::{Digit, abs};
+/// // |-1| == 1.
+/// let mut a = [Digit::MAX];
+/// abs(&mut a);
+/// assert_eq!(a, [Digit::from(1u8)]);
+/// // A non-negative value is unchanged.
+/// let mut a = [Digit::from(5u8)];
+/// abs(&mut a);
+/// assert_eq!(a, [Digit::from(5u8)]);
+/// ```
+pub fn abs(digits: &mut [Digit]) {
+    if is_negative(digits) {
+        neg(digits);
+    }
+}
+
 /// Sign-extends the signed value held in `digits[..len]` to fill the rest of
 /// `digits` in place: every digit from index `len` onward is set to the value's sign
 /// (all-ones if negative, zero otherwise).

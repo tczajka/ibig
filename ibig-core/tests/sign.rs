@@ -1,7 +1,7 @@
 //! Integration tests for sign operations.
 
 use ibig_core::{
-    Digit, IDigit, extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow,
+    Digit, IDigit, abs, extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow,
     sign_extension, sign_extension_byte, sign_extension_idigit,
 };
 
@@ -116,6 +116,42 @@ fn neg_borrow_basic() {
 #[should_panic]
 fn neg_borrow_empty() {
     neg_borrow(&mut [], true);
+}
+
+#[test]
+fn abs_basic() {
+    // A non-negative value is unchanged.
+    let mut a = [digit(3)];
+    abs(&mut a);
+    assert_eq!(a, [digit(3)]);
+
+    // |-1| == 1.
+    let mut a = [Digit::MAX];
+    abs(&mut a);
+    assert_eq!(a, [digit(1)]);
+
+    // |0| == 0.
+    let mut a = [Digit::ZERO];
+    abs(&mut a);
+    assert_eq!(a, [Digit::ZERO]);
+
+    // The most-negative single digit: |-2^(bits-1)| == 2^(bits-1), which fits in one unsigned
+    // digit (its top bit set).
+    let signed_min = (Digit::MAX >> 1) + digit(1);
+    let mut a = [signed_min];
+    abs(&mut a);
+    assert_eq!(a, [signed_min]);
+
+    // Multi-digit: |-1| == 1.
+    let mut a = [Digit::MAX, Digit::MAX];
+    abs(&mut a);
+    assert_eq!(a, [digit(1), Digit::ZERO]);
+}
+
+#[test]
+#[should_panic]
+fn abs_empty() {
+    abs(&mut []);
 }
 
 #[test]

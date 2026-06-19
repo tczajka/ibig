@@ -50,7 +50,7 @@ pub use shift::{
     shr_small_unsigned,
 };
 pub use sign::{
-    extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow, sign_extension,
+    abs, extend_signed, extend_signed_bytes, is_negative, neg, neg_borrow, sign_extension,
     sign_extension_byte, sign_extension_idigit,
 };
 pub use sub::{
