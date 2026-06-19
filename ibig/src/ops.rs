@@ -273,6 +273,32 @@ pub(crate) trait BinaryOpRefBigBig {
     fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output;
 }
 
+/// A commutative binary operation on big numbers, reading them without consuming them.
+///
+/// Each operand appears as either a single digit (`digit`) or a borrowed slice (`ref`).
+pub(crate) trait CommutativeBinaryOpRefBigBig {
+    /// The type of operands.
+    type Operand: AsDigits;
+
+    /// The type of the result.
+    type Output;
+
+    /// Both operands are single digits.
+    fn apply_digit_digit(
+        lhs: <Self::Operand as AsDigits>::SingleDigit,
+        rhs: <Self::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output;
+
+    /// One operand is a borrowed slice, the other a single digit.
+    fn apply_ref_digit(
+        lhs: &[Digit],
+        rhs: <Self::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output;
+
+    /// Both operands are borrowed slices.
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output;
+}
+
 /// A binary operation implemented on a big number and a `Copy` right operand.
 ///
 /// The big number appears in one of three forms: a single digit (`digit`), a borrowed
@@ -419,6 +445,32 @@ impl<Op: BinaryOpRefBigBig> BinaryOpRef for Op {
             (Large(a), Small(b)) => <Op as BinaryOpRefBigBig>::apply_ref_digit(a, b),
             (Large(a), Large(b)) => <Op as BinaryOpRefBigBig>::apply_ref_ref(a, b),
         }
+    }
+}
+
+/// Every [`CommutativeBinaryOpRefBigBig`] is a [`BinaryOpRefBigBig`].
+impl<Op: CommutativeBinaryOpRefBigBig> BinaryOpRefBigBig for Op {
+    type Left = Op::Operand;
+    type Right = Op::Operand;
+    type Output = Op::Output;
+
+    fn apply_digit_digit(
+        lhs: <Op::Operand as AsDigits>::SingleDigit,
+        rhs: <Op::Operand as AsDigits>::SingleDigit,
+    ) -> Self::Output {
+        <Op as CommutativeBinaryOpRefBigBig>::apply_digit_digit(lhs, rhs)
+    }
+
+    fn apply_digit_ref(lhs: <Op::Operand as AsDigits>::SingleDigit, rhs: &[Digit]) -> Self::Output {
+        <Op as CommutativeBinaryOpRefBigBig>::apply_ref_digit(rhs, lhs)
+    }
+
+    fn apply_ref_digit(lhs: &[Digit], rhs: <Op::Operand as AsDigits>::SingleDigit) -> Self::Output {
+        <Op as CommutativeBinaryOpRefBigBig>::apply_ref_digit(lhs, rhs)
+    }
+
+    fn apply_ref_ref(lhs: &[Digit], rhs: &[Digit]) -> Self::Output {
+        <Op as CommutativeBinaryOpRefBigBig>::apply_ref_ref(lhs, rhs)
     }
 }
 

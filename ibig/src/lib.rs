@@ -18,6 +18,7 @@ mod cmp;
 mod convert;
 mod error;
 mod hash;
+mod midpoint;
 mod misc;
 mod ops;
 mod repr;

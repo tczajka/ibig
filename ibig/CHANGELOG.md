@@ -26,6 +26,8 @@ API changes.
 - `UBig::bit_and_not`.
 - `IBig::abs`.
 - `IBig::abs_unsigned`.
+- `UBig::midpoint`.
+- `IBig::midpoint`.
 
 ## [0.3.6] - 2022-09-18
 
