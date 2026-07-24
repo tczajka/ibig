@@ -190,7 +190,7 @@ fn ubig_ilog2() {
 #[test]
 #[should_panic]
 fn ubig_ilog2_zero() {
-    UBig::ZERO.ilog2();
+    let _ = UBig::ZERO.ilog2();
 }
 
 #[test]
@@ -222,13 +222,13 @@ fn ibig_ilog2() {
 #[test]
 #[should_panic]
 fn ibig_ilog2_zero() {
-    IBig::ZERO.ilog2();
+    let _ = IBig::ZERO.ilog2();
 }
 
 #[test]
 #[should_panic]
 fn ibig_ilog2_negative() {
-    IBig::from(-4i8).ilog2();
+    let _ = IBig::from(-4i8).ilog2();
 }
 
 #[test]
@@ -261,7 +261,7 @@ fn ubig_trailing_zeros() {
 #[test]
 #[should_panic]
 fn ubig_trailing_zeros_zero() {
-    UBig::ZERO.trailing_zeros();
+    let _ = UBig::ZERO.trailing_zeros();
 }
 
 #[test]
@@ -275,7 +275,7 @@ fn ibig_trailing_zeros() {
 #[test]
 #[should_panic]
 fn ibig_trailing_zeros_zero() {
-    IBig::ZERO.trailing_zeros();
+    let _ = IBig::ZERO.trailing_zeros();
 }
 
 proptest! {
@@ -310,7 +310,7 @@ fn ibig_trailing_ones() {
 #[test]
 #[should_panic]
 fn ibig_trailing_ones_minus_one() {
-    IBig::from(-1i8).trailing_ones();
+    let _ = IBig::from(-1i8).trailing_ones();
 }
 
 #[test]

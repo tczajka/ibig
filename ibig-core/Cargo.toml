@@ -18,6 +18,9 @@ include = [
     "LICENSE-MIT",
 ]
 
+[lints]
+workspace = true
+
 [dependencies]
 unative = "0.2.6"
 

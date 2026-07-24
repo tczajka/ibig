@@ -95,7 +95,10 @@ impl CommutativeBinaryOpRefBigBig for MidpointIBigIBig {
         let icarry = ibig_core::add_signed_idigit(&mut digits, rhs);
         digits.push(icarry.cast_unsigned());
         let is_negative = ibig_core::is_negative(&digits);
-        ibig_core::add_unsigned_carry(&mut digits, is_negative);
+        // Add 1 to a negative sum so the arithmetic shift rounds toward zero. The unsigned
+        // carry-out (only when the sum is -1, wrapping to 0) is correct to drop: incrementing
+        // a negative value never overflows the signed range.
+        let _ = ibig_core::add_unsigned_carry(&mut digits, is_negative);
         ibig_core::shr_small_signed(&mut digits, 1);
         IBig::from_digits(digits)
     }
@@ -111,7 +114,10 @@ impl CommutativeBinaryOpRefBigBig for MidpointIBigIBig {
         let icarry = ibig_core::add_signed_signed(&mut digits, shorter);
         digits.push(icarry.cast_unsigned());
         let is_negative = ibig_core::is_negative(&digits);
-        ibig_core::add_unsigned_carry(&mut digits, is_negative);
+        // Add 1 to a negative sum so the arithmetic shift rounds toward zero. The unsigned
+        // carry-out (only when the sum is -1, wrapping to 0) is correct to drop: incrementing
+        // a negative value never overflows the signed range.
+        let _ = ibig_core::add_unsigned_carry(&mut digits, is_negative);
         ibig_core::shr_small_signed(&mut digits, 1);
         IBig::from_digits(digits)
     }

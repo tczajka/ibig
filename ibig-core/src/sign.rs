@@ -110,7 +110,8 @@ pub fn neg_borrow(digits: &mut [Digit], borrow: bool) -> IDigit {
 /// ```
 pub fn abs(digits: &mut [Digit]) {
     if is_negative(digits) {
-        neg(digits);
+        // Negating a negative value never carries: the magnitude fits unsigned.
+        assert_eq!(neg(digits), IDigit::ZERO);
     }
 }
 

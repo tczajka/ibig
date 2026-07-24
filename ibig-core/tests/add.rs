@@ -41,7 +41,7 @@ fn add_unsigned_unsigned_same_len_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_unsigned_same_len_mismatched() {
-    add_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = add_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn add_unsigned_unsigned_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_unsigned_rhs_longer() {
-    add_unsigned_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = add_unsigned_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn add_unsigned_digit_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_digit_empty() {
-    add_unsigned_digit(&mut [], digit(1));
+    let _ = add_unsigned_digit(&mut [], digit(1));
 }
 
 #[test]
@@ -165,7 +165,7 @@ fn add_unsigned_icarry_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_icarry_out_of_range() {
-    add_unsigned_icarry(&mut [digit(1)], idigit(2));
+    let _ = add_unsigned_icarry(&mut [digit(1)], idigit(2));
 }
 
 #[test]
@@ -202,13 +202,13 @@ fn add_unsigned_signed_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_signed_rhs_longer() {
-    add_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = add_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn add_unsigned_signed_rhs_empty() {
-    add_unsigned_signed(&mut [digit(1)], &[]);
+    let _ = add_unsigned_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn add_unsigned_idigit_basic() {
 #[test]
 #[should_panic]
 fn add_unsigned_idigit_empty() {
-    add_unsigned_idigit(&mut [], idigit(1));
+    let _ = add_unsigned_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -299,13 +299,13 @@ fn add_signed_unsigned_basic() {
 #[test]
 #[should_panic]
 fn add_signed_unsigned_rhs_longer() {
-    add_signed_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = add_signed_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn add_signed_unsigned_lhs_empty() {
-    add_signed_unsigned(&mut [], &[]);
+    let _ = add_signed_unsigned(&mut [], &[]);
 }
 
 #[test]
@@ -350,13 +350,13 @@ fn add_signed_signed_basic() {
 #[test]
 #[should_panic]
 fn add_signed_signed_rhs_longer() {
-    add_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = add_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn add_signed_signed_rhs_empty() {
-    add_signed_signed(&mut [digit(1)], &[]);
+    let _ = add_signed_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -381,7 +381,7 @@ fn add_signed_digit_basic() {
 #[test]
 #[should_panic]
 fn add_signed_digit_empty() {
-    add_signed_digit(&mut [], digit(1));
+    let _ = add_signed_digit(&mut [], digit(1));
 }
 
 #[test]
@@ -410,7 +410,7 @@ fn add_signed_idigit_basic() {
 #[test]
 #[should_panic]
 fn add_signed_idigit_empty() {
-    add_signed_idigit(&mut [], idigit(1));
+    let _ = add_signed_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -440,7 +440,7 @@ fn add_signed_icarry_basic() {
 #[test]
 #[should_panic]
 fn add_signed_icarry_empty() {
-    add_signed_icarry(&mut [], idigit(1));
+    let _ = add_signed_icarry(&mut [], idigit(1));
 }
 
 #[test]

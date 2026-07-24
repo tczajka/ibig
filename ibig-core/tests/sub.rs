@@ -45,7 +45,7 @@ fn sub_unsigned_unsigned_basic() {
 #[test]
 #[should_panic]
 fn sub_unsigned_unsigned_rhs_longer() {
-    sub_unsigned_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_unsigned_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -72,7 +72,7 @@ fn sub_unsigned_unsigned_same_len_basic() {
 #[test]
 #[should_panic]
 fn sub_unsigned_unsigned_same_len_mismatched() {
-    sub_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -93,7 +93,7 @@ fn sub_unsigned_digit_basic() {
 #[test]
 #[should_panic]
 fn sub_unsigned_digit_empty() {
-    sub_unsigned_digit(&mut [], digit(1));
+    let _ = sub_unsigned_digit(&mut [], digit(1));
 }
 
 #[test]
@@ -168,13 +168,13 @@ fn sub_unsigned_signed_basic() {
 #[test]
 #[should_panic]
 fn sub_unsigned_signed_rhs_longer() {
-    sub_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn sub_unsigned_signed_rhs_empty() {
-    sub_unsigned_signed(&mut [digit(1)], &[]);
+    let _ = sub_unsigned_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -203,7 +203,7 @@ fn sub_unsigned_idigit_basic() {
 #[test]
 #[should_panic]
 fn sub_unsigned_idigit_empty() {
-    sub_unsigned_idigit(&mut [], idigit(1));
+    let _ = sub_unsigned_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -332,13 +332,13 @@ fn sub_signed_unsigned_basic() {
 #[test]
 #[should_panic]
 fn sub_signed_unsigned_rhs_longer() {
-    sub_signed_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_signed_unsigned(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn sub_signed_unsigned_lhs_empty() {
-    sub_signed_unsigned(&mut [], &[]);
+    let _ = sub_signed_unsigned(&mut [], &[]);
 }
 
 #[test]
@@ -381,13 +381,13 @@ fn sub_signed_signed_basic() {
 #[test]
 #[should_panic]
 fn sub_signed_signed_rhs_longer() {
-    sub_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn sub_signed_signed_rhs_empty() {
-    sub_signed_signed(&mut [digit(1)], &[]);
+    let _ = sub_signed_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -412,7 +412,7 @@ fn sub_signed_digit_basic() {
 #[test]
 #[should_panic]
 fn sub_signed_digit_empty() {
-    sub_signed_digit(&mut [], digit(1));
+    let _ = sub_signed_digit(&mut [], digit(1));
 }
 
 #[test]
@@ -441,7 +441,7 @@ fn sub_signed_idigit_basic() {
 #[test]
 #[should_panic]
 fn sub_signed_idigit_empty() {
-    sub_signed_idigit(&mut [], idigit(1));
+    let _ = sub_signed_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -469,7 +469,7 @@ fn sub_rev_unsigned_unsigned_same_len_basic() {
 #[test]
 #[should_panic]
 fn sub_rev_unsigned_unsigned_same_len_mismatched() {
-    sub_rev_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_rev_unsigned_unsigned_same_len(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
@@ -498,13 +498,13 @@ fn sub_rev_unsigned_signed_basic() {
 #[test]
 #[should_panic]
 fn sub_rev_unsigned_signed_rhs_longer() {
-    sub_rev_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_rev_unsigned_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn sub_rev_unsigned_signed_rhs_empty() {
-    sub_rev_unsigned_signed(&mut [digit(1)], &[]);
+    let _ = sub_rev_unsigned_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -528,7 +528,7 @@ fn sub_rev_unsigned_idigit_basic() {
 #[test]
 #[should_panic]
 fn sub_rev_unsigned_idigit_empty() {
-    sub_rev_unsigned_idigit(&mut [], idigit(1));
+    let _ = sub_rev_unsigned_idigit(&mut [], idigit(1));
 }
 
 #[test]
@@ -563,13 +563,13 @@ fn sub_rev_signed_signed_basic() {
 #[test]
 #[should_panic]
 fn sub_rev_signed_signed_rhs_longer() {
-    sub_rev_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
+    let _ = sub_rev_signed_signed(&mut [digit(1)], &[digit(1), digit(2)]);
 }
 
 #[test]
 #[should_panic]
 fn sub_rev_signed_signed_rhs_empty() {
-    sub_rev_signed_signed(&mut [digit(1)], &[]);
+    let _ = sub_rev_signed_signed(&mut [digit(1)], &[]);
 }
 
 #[test]
@@ -588,7 +588,7 @@ fn sub_rev_signed_idigit_basic() {
 #[test]
 #[should_panic]
 fn sub_rev_signed_idigit_empty() {
-    sub_rev_signed_idigit(&mut [], idigit(1));
+    let _ = sub_rev_signed_idigit(&mut [], idigit(1));
 }
 
 proptest! {

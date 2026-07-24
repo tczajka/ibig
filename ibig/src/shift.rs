@@ -170,7 +170,7 @@ impl BinaryOpRefValBigCopy for ShrUBig {
         if index.digit_index() >= lhs.len() {
             return UBig::ZERO;
         }
-        lhs.drain(..index.digit_index());
+        let _ = lhs.drain(..index.digit_index());
         ibig_core::shr_small_unsigned(&mut lhs, index.bit_index());
         UBig::from_digits(lhs)
     }
@@ -212,7 +212,7 @@ impl BinaryOpRefValBigCopy for ShrIBig {
         if index.digit_index() >= lhs.len() {
             return IBig::shr_whole(&lhs);
         }
-        lhs.drain(..index.digit_index());
+        let _ = lhs.drain(..index.digit_index());
         ibig_core::shr_small_signed(&mut lhs, index.bit_index());
         IBig::from_digits(lhs)
     }

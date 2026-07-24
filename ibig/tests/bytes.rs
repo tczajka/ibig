@@ -92,11 +92,11 @@ fn ibig_sign_extension_is_ignored() {
 #[test]
 #[should_panic]
 fn ibig_from_le_empty_panics() {
-    IBig::from_le_bytes(&[]);
+    let _ = IBig::from_le_bytes(&[]);
 }
 
 #[test]
 #[should_panic]
 fn ibig_from_be_empty_panics() {
-    IBig::from_be_bytes(&[]);
+    let _ = IBig::from_be_bytes(&[]);
 }

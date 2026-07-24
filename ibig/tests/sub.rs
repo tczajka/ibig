@@ -311,7 +311,7 @@ fn ubig_strict_sub_signed_basic() {
 #[test]
 #[should_panic(expected = "negative UBig")]
 fn ubig_strict_sub_signed_negative() {
-    UBig::from(5u8).strict_sub_signed(&IBig::from(8));
+    let _ = UBig::from(5u8).strict_sub_signed(&IBig::from(8));
 }
 
 #[test]

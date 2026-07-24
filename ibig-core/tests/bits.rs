@@ -37,7 +37,7 @@ fn test_bit_index_overflow() {
 #[should_panic]
 fn test_bit_index_new_bad_bit() {
     // A bit index at or above the digit width is rejected.
-    BitIndex::new(0, Digit::BITS);
+    let _ = BitIndex::new(0, Digit::BITS);
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn test_bit_signed() {
 #[test]
 #[should_panic]
 fn test_bit_signed_empty() {
-    bit_signed(&[], idx(0));
+    let _ = bit_signed(&[], idx(0));
 }
 
 #[test]

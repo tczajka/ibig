@@ -2,3 +2,15 @@
 resolver = "3"
 members = ["ibig-core", "ibig"]
 exclude = ["ibig-old", "dev-tools-old"]
+
+[workspace.lints.rust]
+meta_variable_misuse = "deny"
+missing_debug_implementations = "deny"
+missing_docs = "deny"
+trivial_casts = "deny"
+unnameable_types = "deny"
+unreachable_pub = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+unused_lifetimes = "deny"
+unused_qualifications = "deny"
+unused_results = "deny"

@@ -33,7 +33,7 @@ fn test_is_negative() {
 #[test]
 #[should_panic]
 fn test_is_negative_empty() {
-    is_negative(&[]);
+    let _ = is_negative(&[]);
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn neg_basic() {
 #[test]
 #[should_panic]
 fn neg_empty() {
-    neg(&mut []);
+    let _ = neg(&mut []);
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn neg_borrow_basic() {
 #[test]
 #[should_panic]
 fn neg_borrow_empty() {
-    neg_borrow(&mut [], true);
+    let _ = neg_borrow(&mut [], true);
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn sign_extension_basic() {
 #[test]
 #[should_panic]
 fn sign_extension_empty() {
-    sign_extension(&[]);
+    let _ = sign_extension(&[]);
 }
 
 #[test]

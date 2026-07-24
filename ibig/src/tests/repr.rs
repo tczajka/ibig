@@ -128,7 +128,7 @@ fn ubig_const_from_digits() {
 #[should_panic]
 fn ubig_const_from_digits_panics_when_too_long() {
     // More than `INLINE_DIGITS` (= 4) digits cannot be stored inline.
-    UBig::const_from_digits(&[digit(1), digit(2), digit(3), digit(4), digit(5)]);
+    let _ = UBig::const_from_digits(&[digit(1), digit(2), digit(3), digit(4), digit(5)]);
 }
 
 #[test]
@@ -166,14 +166,14 @@ fn ibig_const_from_digits() {
 #[test]
 #[should_panic]
 fn ibig_const_from_digits_panics_on_empty() {
-    IBig::const_from_digits(&[]);
+    let _ = IBig::const_from_digits(&[]);
 }
 
 #[test]
 #[should_panic]
 fn ibig_const_from_digits_panics_when_too_long() {
     // More than `INLINE_DIGITS` (= 4) digits cannot be stored inline.
-    IBig::const_from_digits(&[digit(1), digit(2), digit(3), digit(4), digit(5)]);
+    let _ = IBig::const_from_digits(&[digit(1), digit(2), digit(3), digit(4), digit(5)]);
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn ibig_from_digits_normalizes() {
 #[test]
 #[should_panic]
 fn ibig_from_digits_panics_on_empty() {
-    IBig::from_digits(smallvec![]);
+    let _ = IBig::from_digits(smallvec![]);
 }
 
 #[test]

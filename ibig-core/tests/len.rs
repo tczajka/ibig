@@ -57,7 +57,7 @@ fn test_min_len_signed() {
 #[test]
 #[should_panic]
 fn test_min_len_signed_empty() {
-    min_len_signed(&[]);
+    let _ = min_len_signed(&[]);
 }
 
 #[test]
@@ -100,5 +100,5 @@ fn test_min_len_bytes_signed() {
 #[test]
 #[should_panic]
 fn test_min_len_bytes_signed_empty() {
-    min_len_bytes_signed(&[]);
+    let _ = min_len_bytes_signed(&[]);
 }

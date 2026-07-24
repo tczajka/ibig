@@ -371,14 +371,14 @@ impl AsDigits for UBig {
         // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
         // for `smallvec` than testing `digits.len() == 1`.
         if !self.0.spilled() && digits.len() == 1 {
-            AsDigitsResult::Small(digits[0])
+            Small(digits[0])
         } else {
             // SAFETY: `UBig` invariants.
             unsafe {
                 assert_unchecked(digits.len() > 1);
                 assert_unchecked(*digits.last().unwrap() != Digit::ZERO);
             };
-            AsDigitsResult::Large(digits)
+            Large(digits)
         }
     }
 
@@ -387,14 +387,14 @@ impl AsDigits for UBig {
         // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
         // for `smallvec` than testing `digits.len() == 1`.
         if !self.0.spilled() && digits.len() == 1 {
-            AsDigitsResult::Small(digits[0])
+            Small(digits[0])
         } else {
             // SAFETY: `UBig` invariants.
             unsafe {
                 assert_unchecked(digits.len() > 1);
                 assert_unchecked(*digits.last().unwrap() != Digit::ZERO);
             };
-            AsDigitsResult::Large(self.0)
+            Large(self.0)
         }
     }
 }
@@ -407,7 +407,7 @@ impl AsDigits for IBig {
         // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
         // for `smallvec` than testing `digits.len() == 1`.
         if !self.0.spilled() && digits.len() == 1 {
-            AsDigitsResult::Small(digits[0].cast_signed())
+            Small(digits[0].cast_signed())
         } else {
             // SAFETY: `IBig` invariants.
             unsafe {
@@ -417,7 +417,7 @@ impl AsDigits for IBig {
                         != sign_extension_idigit(digits[digits.len() - 2].cast_signed()),
                 );
             };
-            AsDigitsResult::Large(digits)
+            Large(digits)
         }
     }
 
@@ -426,7 +426,7 @@ impl AsDigits for IBig {
         // One digit is never spilled. Testing `!spilled() && digits.len() == 1` makes it simpler
         // for `smallvec` than testing `digits.len() == 1`.
         if !self.0.spilled() && digits.len() == 1 {
-            AsDigitsResult::Small(digits[0].cast_signed())
+            Small(digits[0].cast_signed())
         } else {
             // SAFETY: `IBig` invariants.
             unsafe {
@@ -436,7 +436,7 @@ impl AsDigits for IBig {
                         != sign_extension_idigit(digits[digits.len() - 2].cast_signed()),
                 );
             };
-            AsDigitsResult::Large(self.0)
+            Large(self.0)
         }
     }
 }
